@@ -1,0 +1,1 @@
+{"status": 200, "body": [{"email": "me@kennethreitz.com", "name": "Kenneth Reitz", "type": "Anonymous", "contributions": 2141}], "link": "<https://api.github.com/repositories/1362490/contributors?per_page=1&anon=true&page=2>; rel=\"next\", <https://api.github.com/repositories/1362490/contributors?per_page=1&anon=true&page=795>; rel=\"last\""}
