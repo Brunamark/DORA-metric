@@ -1,0 +1,8 @@
+| Etapa | Restantes | Descartados | Motivo |
+|---|---|---|---|
+| Candidatos coletados na busca | 5347 |  |  |
+| Avaliados (ordem aleatória, seed fixa, até atingir o alvo) | 352 | 4995 | não avaliados (alvo já atingido) |
+| Usam GitHub Actions | 307 | 45 | sem workflows / erro de API |
+| >= 5 releases publicadas na janela | 131 | 176 | releases insuficientes |
+| >= 50 workflow runs válidos (push, default branch) | 100 | 31 | runs insuficientes |
+| AMOSTRA FINAL | 100 |  |  |
