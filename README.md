@@ -149,6 +149,7 @@ python coleta_releases.py --inicio 2025-10-01 --fim 2026-10-01
 | `tag_anterior` | texto | tag da release publicada imediatamente anterior (base do `compare`) |
 | `status` | texto | resultado no cálculo de lead time (valores na tabela acima) |
 | `n_commits` | inteiro | commits entregues pela release (`compare/{tag_anterior}...{tag_name}`) |
+| `total_commits_api` | inteiro | `total_commits` informado pelo `compare`; diferente de `n_commits` indica comparação incompleta |
 | `lead_time_release_dias` | decimal | **dias**, `published_at − min(commit.author.date)`, variante (a) |
 
 `commits_releases.csv`: uma linha por commit entregue em release com `status = ok`.
@@ -174,12 +175,16 @@ python coleta_releases.py --inicio 2025-10-01 --fim 2026-10-01
 | Coluna | Tipo | Unidade / origem |
 |---|---|---|
 | `full_name` | texto | `owner/repo` |
+| `status_releases` | texto | `ok` ou `erro_http_<código>` ao listar as releases (o repositório fica sem métricas, mas não some do CSV) |
+| `status_tags` | texto | `ok` ou `erro_http_<código>` ao listar as tags |
 | `releases_na_janela` | inteiro | releases publicadas (sem draft e sem prerelease) dentro da janela |
 | `releases_calculadas` | inteiro | releases da janela com lead time calculado (`status = ok`) |
 | `releases_sem_commits` | inteiro | releases da janela sem commits novos |
 | `releases_404` | inteiro | releases puladas porque o `compare` retornou 404 |
 | `releases_erro` | inteiro | releases puladas por outro erro HTTP no `compare` |
+| `releases_commits_incompletos` | inteiro | releases em que `n_commits` ≠ `total_commits_api` |
 | `commits` | inteiro | commits entregues pelas releases calculadas |
+| `commits_lead_time_negativo` | inteiro | commits com `commit.author.date` posterior à release (dado inconsistente, mantido no cálculo) |
 | `lead_time_release_mediana_dias` | decimal | **dias**, mediana de `lead_time_release_dias`, variante (a) |
 | `lead_time_commit_mediana_dias` | decimal | **dias**, mediana de `lead_time_dias` de todos os commits, variante (b) |
 

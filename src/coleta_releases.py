@@ -12,6 +12,9 @@ Fluxo, para cada repositório de data/repos_selecionados.csv:
      Tag inexistente ou reescrita (HTTP 404): a release é pulada e contada.
   4. Calcula o lead time nas duas variantes (ver metricas.py), pela data de autoria.
 
+Problemas de dados não ficam só no terminal: erros de API, comparações com commits
+faltando e lead times negativos são registrados nos CSVs.
+
 Saídas em --saida:
   releases.csv          todas as releases listadas, com o status de cada uma no cálculo
   commits_releases.csv  commits entregues por release, com o lead time de cada um
@@ -48,13 +51,16 @@ FOLGA_PAGINACAO = timedelta(days=90)
 
 CAMPOS_RELEASES = [
     "full_name", "tag_name", "draft", "prerelease", "published_at",
-    "na_janela", "tag_anterior", "status", "n_commits", "lead_time_release_dias",
+    "na_janela", "tag_anterior", "status", "n_commits", "total_commits_api",
+    "lead_time_release_dias",
 ]
 CAMPOS_COMMITS = ["full_name", "tag_name", "sha", "author_date", "lead_time_dias"]
 CAMPOS_TAGS = ["full_name", "tag_name", "sha"]
 CAMPOS_RESUMO = [
-    "full_name", "releases_na_janela", "releases_calculadas", "releases_sem_commits",
-    "releases_404", "releases_erro", "commits",
+    "full_name", "status_releases", "status_tags",
+    "releases_na_janela", "releases_calculadas", "releases_sem_commits",
+    "releases_404", "releases_erro", "releases_commits_incompletos",
+    "commits", "commits_lead_time_negativo",
     "lead_time_release_mediana_dias", "lead_time_commit_mediana_dias",
 ]
 
@@ -70,15 +76,15 @@ def publicada(release: dict) -> bool:
 # --------------------------------------------------------------------------
 # Coleta
 # --------------------------------------------------------------------------
-def listar_releases(client, fn: str, ini: datetime) -> list[dict] | None:
+def listar_releases(client, fn: str, ini: datetime) -> tuple[int, list[dict]]:
     """Releases do repositório, até achar uma publicada antes da janela (a anterior
-    da primeira release da janela). None em erro de API."""
+    da primeira release da janela). Retorna (status_http, releases)."""
     releases = []
     pagina = 1
     while True:
         st, corpo, link = client.get(f"/repos/{fn}/releases", {"per_page": 100, "page": pagina})
         if st != 200:
-            return None
+            return st, []
         if not corpo:
             break
         releases.extend(corpo)
@@ -87,19 +93,20 @@ def listar_releases(client, fn: str, ini: datetime) -> list[dict] | None:
         if not tem_proxima(link) or (achou_anterior and mais_antiga < ini - FOLGA_PAGINACAO):
             break
         pagina += 1
-    return releases
+    return 200, releases
 
 
-def listar_tags(client, fn: str) -> list[dict] | None:
+def listar_tags(client, fn: str) -> tuple[int, list[dict]]:
+    """Todas as tags do repositório. Retorna (status_http, tags)."""
     tags = []
     pagina = 1
     while True:
         st, corpo, link = client.get(f"/repos/{fn}/tags", {"per_page": 100, "page": pagina})
         if st != 200:
-            return None
+            return st, []
         tags.extend(corpo or [])
         if not tem_proxima(link):
-            return tags
+            return 200, tags
         pagina += 1
 
 
@@ -114,40 +121,57 @@ def _enxugar_compare(corpo: dict) -> dict:
     }
 
 
-def commits_entre(client, fn: str, base: str, head: str) -> tuple[int, list[dict]]:
-    """Commits em head que não estão em base. Retorna (status_http, commits);
-    status diferente de 200 significa que a comparação falhou (ex.: 404)."""
+def commits_entre(client, fn: str, base: str, head: str) -> tuple[int, list[dict], int | None]:
+    """Commits em head que não estão em base. Retorna (status_http, commits, total_commits
+    informado pela API); status diferente de 200 significa que a comparação falhou (ex.: 404)."""
     caminho = f"/repos/{fn}/compare/{quote(base, safe='')}...{quote(head, safe='')}"
     commits = []
     pagina = 1
     while True:
         st, corpo, link = client.get(caminho, {"per_page": 100, "page": pagina}, enxugar=_enxugar_compare)
         if st != 200:
-            return st, []
+            return st, [], None
         commits.extend(corpo.get("commits", []))
         if not tem_proxima(link):
             break
         pagina += 1
-    total = corpo.get("total_commits")
-    if total is not None and total != len(commits):
-        print(f"  aviso: {fn} {base}...{head}: {len(commits)} de {total} commits", flush=True)
-    return 200, commits
+    return 200, commits, corpo.get("total_commits")
 
 
 # --------------------------------------------------------------------------
 # Processamento de um repositório
 # --------------------------------------------------------------------------
-def processar_repo(client, fn: str, ini: datetime, fim: datetime) -> dict | None:
-    """Retorna {"releases": [...], "commits": [...], "resumo": {...}} ou None em erro de API."""
-    releases = listar_releases(client, fn, ini)
-    if releases is None:
-        return None
+def _resumo_vazio(fn: str) -> dict:
+    resumo = {campo: 0 for campo in CAMPOS_RESUMO}
+    resumo.update({
+        "full_name": fn,
+        "status_releases": "ok",
+        "status_tags": "ok",
+        "lead_time_release_mediana_dias": "",
+        "lead_time_commit_mediana_dias": "",
+    })
+    return resumo
+
+
+def processar_repo(client, fn: str, ini: datetime, fim: datetime) -> dict:
+    """Retorna {"releases": [...], "commits": [...], "tags": [...], "resumo": {...}}.
+    Todo repositório gera uma linha de resumo, mesmo quando a API falha."""
+    resumo = _resumo_vazio(fn)
+    resultado = {"releases": [], "commits": [], "tags": [], "resumo": resumo}
+
+    st_tags, tags = listar_tags(client, fn)
+    if st_tags != 200:
+        resumo["status_tags"] = f"erro_http_{st_tags}"
+    resultado["tags"] = [{"full_name": fn, "tag_name": t["name"], "sha": t["commit"]["sha"]} for t in tags]
+
+    st_rel, releases = listar_releases(client, fn, ini)
+    if st_rel != 200:
+        resumo["status_releases"] = f"erro_http_{st_rel}"
+        return resultado
 
     publicadas = sorted((r for r in releases if publicada(r)), key=lambda r: parse_iso(r["published_at"]))
     anterior_de = {id(r): publicadas[i - 1] if i > 0 else None for i, r in enumerate(publicadas)}
-
-    linhas_rel, linhas_commits, para_medianas = [], [], []
-    contagem = {"na_janela": 0, "calculadas": 0, "sem_commits": 0, "404": 0, "erro": 0}
+    para_medianas = []
 
     for r in releases:
         pub = parse_iso(r.get("published_at"))
@@ -162,9 +186,10 @@ def processar_repo(client, fn: str, ini: datetime, fim: datetime) -> dict | None
             "tag_anterior": "",
             "status": "",
             "n_commits": "",
+            "total_commits_api": "",
             "lead_time_release_dias": "",
         }
-        linhas_rel.append(linha)
+        resultado["releases"].append(linha)
 
         if r.get("draft"):
             linha["status"] = "excluida_draft"
@@ -176,57 +201,54 @@ def processar_repo(client, fn: str, ini: datetime, fim: datetime) -> dict | None
             linha["status"] = "fora_da_janela"
             continue
 
-        contagem["na_janela"] += 1
+        resumo["releases_na_janela"] += 1
         anterior = anterior_de[id(r)]
         if anterior is None:
             linha["status"] = "primeira_release"
             continue
         linha["tag_anterior"] = anterior["tag_name"]
 
-        st, commits = commits_entre(client, fn, anterior["tag_name"], r["tag_name"])
+        st, commits, total_api = commits_entre(client, fn, anterior["tag_name"], r["tag_name"])
         if st == 404:
             linha["status"] = "tag_404"
-            contagem["404"] += 1
+            resumo["releases_404"] += 1
             continue
         if st != 200:
             linha["status"] = f"erro_http_{st}"
-            contagem["erro"] += 1
+            resumo["releases_erro"] += 1
             continue
 
         datas = [parse_iso(c["commit"]["author"]["date"]) for c in commits]
         linha["n_commits"] = len(datas)
+        linha["total_commits_api"] = "" if total_api is None else total_api
+        if total_api is not None and total_api != len(datas):
+            resumo["releases_commits_incompletos"] += 1
         if not datas:
             linha["status"] = "sem_commits"
-            contagem["sem_commits"] += 1
+            resumo["releases_sem_commits"] += 1
             continue
 
         linha["status"] = "ok"
         linha["lead_time_release_dias"] = round(lead_time_release(pub, datas), 4)
-        contagem["calculadas"] += 1
+        resumo["releases_calculadas"] += 1
         para_medianas.append((pub, datas))
         for c, lt in zip(commits, lead_time_commit(pub, datas)):
-            linhas_commits.append({
+            resultado["commits"].append({
                 "full_name": fn,
                 "tag_name": r["tag_name"],
                 "sha": c["sha"],
                 "author_date": c["commit"]["author"]["date"],
                 "lead_time_dias": round(lt, 4),
             })
+            if lt < 0:
+                resumo["commits_lead_time_negativo"] += 1
 
+    resumo["commits"] = len(resultado["commits"])
     med_rel = mediana_lead_time_release(para_medianas)
     med_commit = mediana_lead_time_commit(para_medianas)
-    resumo = {
-        "full_name": fn,
-        "releases_na_janela": contagem["na_janela"],
-        "releases_calculadas": contagem["calculadas"],
-        "releases_sem_commits": contagem["sem_commits"],
-        "releases_404": contagem["404"],
-        "releases_erro": contagem["erro"],
-        "commits": len(linhas_commits),
-        "lead_time_release_mediana_dias": "" if med_rel is None else round(med_rel, 4),
-        "lead_time_commit_mediana_dias": "" if med_commit is None else round(med_commit, 4),
-    }
-    return {"releases": linhas_rel, "commits": linhas_commits, "resumo": resumo}
+    resumo["lead_time_release_mediana_dias"] = "" if med_rel is None else round(med_rel, 4)
+    resumo["lead_time_commit_mediana_dias"] = "" if med_commit is None else round(med_commit, 4)
+    return resultado
 
 
 # --------------------------------------------------------------------------
@@ -260,18 +282,24 @@ def main() -> None:
     try:
         for i, fn in enumerate(repos, 1):
             resultado = processar_repo(client, fn, ini, fim)
-            if resultado is None:
-                print(f"[{i}/{len(repos)}] {fn} -> erro ao listar releases", flush=True)
-                continue
-            tags = listar_tags(client, fn) or []
             todas_releases.extend(resultado["releases"])
             todos_commits.extend(resultado["commits"])
-            todas_tags.extend({"full_name": fn, "tag_name": t["name"], "sha": t["commit"]["sha"]} for t in tags)
-            resumos.append(resultado["resumo"])
+            todas_tags.extend(resultado["tags"])
             r = resultado["resumo"]
+            resumos.append(r)
+            problemas = [
+                f"{campo}={r[campo]}"
+                for campo in ("status_releases", "status_tags")
+                if r[campo] != "ok"
+            ] + [
+                f"{campo}={r[campo]}"
+                for campo in ("releases_404", "releases_erro", "releases_commits_incompletos",
+                              "commits_lead_time_negativo")
+                if r[campo]
+            ]
             print(
-                f"[{i}/{len(repos)}] {fn} -> {r['releases_calculadas']} releases, {r['commits']} commits, "
-                f"404: {r['releases_404']}",
+                f"[{i}/{len(repos)}] {fn} -> {r['releases_calculadas']} releases, {r['commits']} commits"
+                + (f" | {', '.join(problemas)}" if problemas else ""),
                 flush=True,
             )
     except KeyboardInterrupt:
@@ -282,9 +310,15 @@ def main() -> None:
     salvar_csv(saida / "tags.csv", CAMPOS_TAGS, todas_tags)
     salvar_csv(saida / "lead_time_repos.csv", CAMPOS_RESUMO, resumos)
 
-    total_404 = sum(r["releases_404"] for r in resumos)
+    def total(campo):
+        return sum(r[campo] for r in resumos)
+
     print(
-        f"\n{len(resumos)} repositórios processados. Releases puladas por 404: {total_404}.\n"
+        f"\n{len(resumos)} repositórios processados "
+        f"({sum(r['status_releases'] != 'ok' for r in resumos)} com erro ao listar releases). "
+        f"Releases puladas por 404: {total('releases_404')} | outros erros: {total('releases_erro')} | "
+        f"comparações incompletas: {total('releases_commits_incompletos')} | "
+        f"commits com lead time negativo: {total('commits_lead_time_negativo')}.\n"
         f"Salvo em {saida}/ (releases.csv, commits_releases.csv, tags.csv, lead_time_repos.csv). "
         f"Chamadas à API: {client.chamadas} | respostas do cache: {client.cache_hits}"
     )
