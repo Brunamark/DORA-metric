@@ -249,7 +249,7 @@ def main() -> None:
     fim = datetime.strptime(args.fim, "%Y-%m-%d").replace(
         hour=23, minute=59, second=59, tzinfo=timezone.utc
     )
-    with open(args.repos, newline="", encoding="utf-8") as f:
+    with open(args.repos, newline="", encoding="utf-8-sig") as f:  # aceita CSV salvo com BOM (Excel)
         repos = [linha["full_name"] for linha in csv.DictReader(f)]
 
     saida = Path(args.saida)
