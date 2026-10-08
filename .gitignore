@@ -1,3 +1,6 @@
 .venv/
 __pycache__/
 .pytest_cache/
+
+# Cache da API: os arquivos ja versionados continuam; respostas novas ficam so local
+src/.cache/
