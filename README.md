@@ -113,6 +113,37 @@ python selecao_repos.py --inicio AAAA-MM-DD --fim AAAA-MM-DD --alvo 5
 | Aviso de faixa com mais de 1.000 resultados | A faixa de estrelas é larga demais | Divida a faixa em intervalos menores |
 | Execução lenta | Rate limit da busca ou da API | Deixe rodando; o cache preserva o progresso |
 
+## Releases, commits entre releases e lead time (Card B, issue #2)
+
+Depois da seleção, rode a coleta de releases com a **mesma janela**:
+
+```bash
+cd src
+python coleta_releases.py --inicio 2025-10-01 --fim 2026-10-01
+```
+
+- Deploy = release publicada (`draft = false`, `prerelease = false`). A primeira release do histórico não tem anterior e é ignorada.
+- Para cada release da janela, os commits entregues vêm de `/compare/{anterior}...{release}`, seguindo a paginação até o fim. Tag inexistente ou reescrita (HTTP 404) pula a release e entra na contagem `releases_404`.
+- O lead time usa a data de autoria do commit (`commit.author.date`), em **dias**:
+  - variante (a), `lead_time_release()`: release − commit mais antigo; o valor do repositório é a mediana entre as releases;
+  - variante (b), `lead_time_commit()`: release − cada commit; o valor do repositório é a mediana de todos os commits.
+
+| Arquivo | Conteúdo |
+|---|---|
+| `releases.csv` | Todas as releases listadas, com `status` (`ok`, `sem_commits`, `tag_404`, `primeira_release`, `fora_da_janela`, `excluida_draft`, `excluida_prerelease`) |
+| `commits_releases.csv` | Commits entregues por release e o lead time de cada um |
+| `tags.csv` | Tags de cada repositório (variante da RQ 07) |
+| `lead_time_repos.csv` | Resumo por repositório, com as medianas das duas variantes |
+
+## Testes
+
+```bash
+pip install -r requirements.txt
+pytest
+```
+
+O workflow `.github/workflows/ci.yml` roda os testes a cada push e pull request.
+
 ## Notas metodológicas
 
 - O funil mostra **candidatos coletados** e **avaliados** separadamente, porque a avaliação para ao atingir o alvo.
