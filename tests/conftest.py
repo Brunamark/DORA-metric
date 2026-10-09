@@ -1,8 +1,10 @@
 """Fixtures compartilhadas: dados pequenos montados à mão, com resultado conhecido."""
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
+
+from metricas import Run
 
 REPO = "org/projeto"
 
@@ -34,6 +36,37 @@ def release_v1_1(data_v1_1, commits_v1_1):
 def release_com_commit_esquecido():
     """Release de 15/04 com três commits recentes e um esquecido desde 15/01."""
     return dia(4, 15), [dia(1, 15), dia(4, 14), dia(4, 13), dia(4, 12)]
+
+
+# --------------------------------------------------------------------------
+# Métricas: exemplo trabalhado da RQ 04 (workflow CI no main, episódio de 1h20)
+# --------------------------------------------------------------------------
+def hora(h: int, m: int = 0, d: int = 10) -> datetime:
+    return datetime(2026, 3, d, h, m, tzinfo=timezone.utc)
+
+
+def workflow_run(run_id, conclusao, inicio, fim=None, workflow_id=1, iniciado=True):
+    """Run que começa em `inicio` e termina em `fim` (padrão: 5 min depois).
+    `iniciado=False` simula run_started_at vazio na API."""
+    return Run(
+        id=run_id,
+        workflow_id=workflow_id,
+        conclusao=conclusao,
+        criado_em=inicio,
+        iniciado_em=inicio if iniciado else None,
+        atualizado_em=fim or inicio + timedelta(minutes=5),
+    )
+
+
+@pytest.fixture
+def runs_exemplo_rq04():
+    """success 09:00 -> failure 10:00 -> failure 10:30 -> success 11:15 (terminou 11:20)."""
+    return [
+        workflow_run(1, "success", hora(9)),
+        workflow_run(2, "failure", hora(10)),
+        workflow_run(3, "failure", hora(10, 30)),
+        workflow_run(4, "success", hora(11, 15), fim=hora(11, 20)),
+    ]
 
 
 # --------------------------------------------------------------------------
