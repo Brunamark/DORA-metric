@@ -113,6 +113,90 @@ python selecao_repos.py --inicio AAAA-MM-DD --fim AAAA-MM-DD --alvo 5
 | Aviso de faixa com mais de 1.000 resultados | A faixa de estrelas é larga demais | Divida a faixa em intervalos menores |
 | Execução lenta | Rate limit da busca ou da API | Deixe rodando; o cache preserva o progresso |
 
+## Releases, commits entre releases e lead time (Card B, issue #2)
+
+Depois da seleção, rode a coleta de releases com a **mesma janela**:
+
+```bash
+cd src
+python coleta_releases.py --inicio 2025-10-01 --fim 2026-10-01
+```
+
+- Deploy = release publicada (`draft = false`, `prerelease = false`). A primeira release do histórico não tem anterior e é ignorada.
+- Para cada release da janela, os commits entregues vêm de `/compare/{anterior}...{release}`, seguindo a paginação até o fim. Tag inexistente ou reescrita (HTTP 404) pula a release e entra na contagem `releases_404`.
+- O lead time usa a data de autoria do commit (`commit.author.date`), em **dias**:
+  - variante (a), `lead_time_release()`: release − commit mais antigo; o valor do repositório é a mediana entre as releases;
+  - variante (b), `lead_time_commit()`: release − cada commit; o valor do repositório é a mediana de todos os commits.
+
+| Arquivo | Conteúdo |
+|---|---|
+| `releases.csv` | Todas as releases listadas, com `status` (`ok`, `sem_commits`, `tag_404`, `primeira_release`, `fora_da_janela`, `excluida_draft`, `excluida_prerelease`) |
+| `commits_releases.csv` | Commits entregues por release e o lead time de cada um |
+| `tags.csv` | Tags de cada repositório (variante da RQ 07) |
+| `lead_time_repos.csv` | Resumo por repositório, com as medianas das duas variantes |
+
+### Dicionário de dados
+
+`releases.csv`: uma linha por release listada.
+
+| Coluna | Tipo | Unidade / origem |
+|---|---|---|
+| `full_name` | texto | `owner/repo` |
+| `tag_name` | texto | `tag_name` da release |
+| `draft` / `prerelease` | booleano | campos `draft` e `prerelease` da release |
+| `published_at` | data/hora ISO | `published_at` da release (vazio em drafts) |
+| `na_janela` | booleano | release publicada com `published_at` dentro da janela |
+| `tag_anterior` | texto | tag da release publicada imediatamente anterior (base do `compare`) |
+| `status` | texto | resultado no cálculo de lead time (valores na tabela acima) |
+| `n_commits` | inteiro | commits entregues pela release (`compare/{tag_anterior}...{tag_name}`) |
+| `total_commits_api` | inteiro | `total_commits` informado pelo `compare`; diferente de `n_commits` indica comparação incompleta |
+| `lead_time_release_dias` | decimal | **dias**, `published_at − min(commit.author.date)`, variante (a) |
+
+`commits_releases.csv`: uma linha por commit entregue em release com `status = ok`.
+
+| Coluna | Tipo | Unidade / origem |
+|---|---|---|
+| `full_name` | texto | `owner/repo` |
+| `tag_name` | texto | release que entregou o commit |
+| `sha` | texto | `sha` do commit |
+| `author_date` | data/hora ISO | `commit.author.date` |
+| `lead_time_dias` | decimal | **dias**, `published_at − commit.author.date`, variante (b) |
+
+`tags.csv`: uma linha por tag (variante da RQ 07).
+
+| Coluna | Tipo | Unidade / origem |
+|---|---|---|
+| `full_name` | texto | `owner/repo` |
+| `tag_name` | texto | `name` da tag |
+| `sha` | texto | `commit.sha` apontado pela tag (a data da tag é a data desse commit) |
+
+`lead_time_repos.csv`: uma linha por repositório.
+
+| Coluna | Tipo | Unidade / origem |
+|---|---|---|
+| `full_name` | texto | `owner/repo` |
+| `status_releases` | texto | `ok` ou `erro_http_<código>` ao listar as releases (o repositório fica sem métricas, mas não some do CSV) |
+| `status_tags` | texto | `ok` ou `erro_http_<código>` ao listar as tags |
+| `releases_na_janela` | inteiro | releases publicadas (sem draft e sem prerelease) dentro da janela |
+| `releases_calculadas` | inteiro | releases da janela com lead time calculado (`status = ok`) |
+| `releases_sem_commits` | inteiro | releases da janela sem commits novos |
+| `releases_404` | inteiro | releases puladas porque o `compare` retornou 404 |
+| `releases_erro` | inteiro | releases puladas por outro erro HTTP no `compare` |
+| `releases_commits_incompletos` | inteiro | releases em que `n_commits` ≠ `total_commits_api` |
+| `commits` | inteiro | commits entregues pelas releases calculadas |
+| `commits_lead_time_negativo` | inteiro | commits com `commit.author.date` posterior à release (dado inconsistente, mantido no cálculo) |
+| `lead_time_release_mediana_dias` | decimal | **dias**, mediana de `lead_time_release_dias`, variante (a) |
+| `lead_time_commit_mediana_dias` | decimal | **dias**, mediana de `lead_time_dias` de todos os commits, variante (b) |
+
+## Testes
+
+```bash
+pip install -r requirements.txt
+pytest --cov=metricas --cov-report=term-missing
+```
+
+O workflow `.github/workflows/ci.yml` roda os testes a cada push e pull request e falha se a cobertura do módulo `metricas` ficar abaixo de 80%.
+
 ## Notas metodológicas
 
 - O funil mostra **candidatos coletados** e **avaliados** separadamente, porque a avaliação para ao atingir o alvo.

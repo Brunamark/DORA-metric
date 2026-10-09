@@ -95,8 +95,10 @@ class GitHubClient:
         print(f"  [rate limit] aguardando {espera}s...", flush=True)
         time.sleep(espera)
 
-    def get(self, path: str, params: dict | None = None):
-        """Retorna (status, corpo_json, link_header). Usa cache em disco."""
+    def get(self, path: str, params: dict | None = None, enxugar=None):
+        """Retorna (status, corpo_json, link_header). Usa cache em disco.
+        `enxugar(corpo)`, se informado, reduz o corpo antes de salvar no cache
+        (ex.: descartar os diffs que o /compare devolve)."""
         url = path if path.startswith("http") else API + path
         arq = self._arquivo_cache(url, params)
         if arq.exists():
@@ -132,6 +134,8 @@ class GitHubClient:
                 self._esperar_reset(resp)
 
             corpo = resp.json() if resp.content else None
+            if enxugar and resp.status_code == 200 and corpo is not None:
+                corpo = enxugar(corpo)
             link = resp.headers.get("Link")
             arq.write_text(
                 json.dumps({"status": resp.status_code, "body": corpo, "link": link}),
