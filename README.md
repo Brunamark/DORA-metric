@@ -7,8 +7,9 @@ Pipeline de coleta para o Lab03. Um único comando executa as três etapas da Sp
 | `selecao` | `src/selecao_repos.py` | A, #1 | Seleção de repositórios, funil de seleção e metadados |
 | `releases` | `src/coleta_releases.py` | B, #2 | Releases, tags, commits entre releases e lead time |
 | `runs` | `src/coleta_runs.py` | C, #3 | Workflow runs (divididos por mês), CFR (a) e tempo de recuperação |
+| `corretivas` | `src/corretivas.py` | #10 (Sprint 2) | Releases corretivas e CFR (b). **Fora do comando padrão** até a amostra-ouro ser rotulada (ver abaixo) |
 
-As três etapas usam a mesma janela, o mesmo cache e gravam os CSVs em `src/data/`.
+As etapas usam a mesma janela, o mesmo cache e gravam os CSVs em `src/data/`.
 
 ## Requisitos
 
@@ -68,7 +69,7 @@ Cada etapa também pode ser executada sozinha (`python src/selecao_repos.py ...`
 |---|---|---|
 | `--inicio` | (obrigatório) | Início da janela, `AAAA-MM-DD` |
 | `--fim` | (obrigatório) | Fim da janela, `AAAA-MM-DD` |
-| `--etapas` | `selecao releases runs` | Etapas a executar (sempre na ordem do pipeline) |
+| `--etapas` | `selecao releases runs` | Etapas a executar (sempre na ordem do pipeline). `corretivas` só roda quando pedida |
 | `--alvo` | `100` | Nº de repositórios da amostra |
 | `--min-releases` | `5` | Mínimo de releases publicadas na janela |
 | `--min-runs` | `50` | Mínimo de workflow runs válidos (push, default branch) |
@@ -282,6 +283,66 @@ Etapa `runs` do pipeline. Sozinha: `python src/coleta_runs.py --inicio 2025-10-0
 | `proporcao_censurados` | decimal | **proporção (0 a 1)**, `episodios_censurados / episodios` |
 | `workflows_falha_sem_sucesso_anterior` | inteiro | workflows cujas primeiras execuções na janela falharam (não abrem episódio) |
 | `tempo_recuperacao_mediana_horas` | decimal | **horas**, mediana de `duracao_horas` dos episódios fechados |
+
+## Releases corretivas e CFR (b) (issue #10, Sprint 2)
+
+Etapa `corretivas` do pipeline. **Ela não roda no comando padrão**: quem rotula a amostra-ouro não pode ver a saída da heurística antes de commitar os próprios rótulos (rotulagem cega, issue #10). Depois da rotulagem:
+
+```bash
+python src/pipeline.py --inicio 2025-10-01 --fim 2026-10-01 --etapas corretivas
+python src/avaliar_heuristica.py        # P/R/F1 contra validacao/consenso.csv
+```
+
+- Uma release R **falha** se uma release **corretiva** cuja predecessora é R for publicada em até **7 dias**; releases dos **últimos 7 dias** da janela são **censuradas** (fora do denominador).
+- **Predecessora**, em duas variantes: `linha` (padrão), que é a maior versão menor ou igual com o mesmo prefixo de tag e trata linhas paralelas (LTS/stable) e monorepos; e `cronologico`, a publicada imediatamente antes, como no lead time.
+- **Seis critérios** de release corretiva, entre eles a regra do enunciado (`semver_e_mensagem`: só o patch mudou **e** algum commit tem `fix`/`hotfix`/`revert`). Detalhes, decisões e a tabela de F1 estão em [`docs/heuristica_corretiva.md`](docs/heuristica_corretiva.md).
+- **Coleta eficiente:** no pareamento cronológico, os `compare` são os mesmos do lead time e saem do cache. Só os pares da variante `linha` que diferem do cronológico geram chamadas novas (35% das releases na amostra da Sprint 1), e cada `compare` novo baixa no máximo `--max-paginas` páginas de 100 commits (padrão 10). As notas da release vêm da listagem que já está no cache.
+- **Resiliência:** um erro inesperado num repositório vira `status` no resumo e a etapa continua; token inválido e `Ctrl+C` interrompem, e o cache permite retomar.
+
+| Arquivo | Conteúdo |
+|---|---|
+| `releases_corretivas.csv` | Uma linha por release da janela × pareamento, com as características e a decisão de cada critério |
+| `cfr_entrega_repos.csv` | Uma linha por repositório × pareamento × critério, com o CFR (b) |
+| `validacao/avaliacao_heuristica.csv` / `.md` | P, R e F1 de cada versão da heurística (gerado por `avaliar_heuristica.py`) |
+| `validacao/erros_heuristica.csv` | Falsos positivos e negativos de cada versão, para o refinamento |
+
+### Dicionário de dados
+
+`releases_corretivas.csv`: uma linha por release publicada na janela e por pareamento.
+
+| Coluna | Tipo | Unidade / origem |
+|---|---|---|
+| `full_name` | texto | `owner/repo` |
+| `tag_name` / `published_at` | texto / data-hora ISO | campos da release |
+| `pareamento` | texto | `linha` ou `cronologico` |
+| `predecessora` | texto | tag da predecessora (vazio = primeira da linha ou da história) |
+| `tipo_mudanca` | texto | `major`, `minor`, `patch`, `sufixo`, `igual`, `regressao` ou vazio (sem versão, prefixos diferentes ou versão por calendário) |
+| `status_compare` | texto | `ok`, `sem_predecessora`, `tag_404` ou `erro_http_<código>` |
+| `n_commits` | inteiro | commits de `compare/{predecessora}...{tag_name}` coletados |
+| `total_commits_api` | inteiro | `total_commits` informado pelo `compare` |
+| `commits_truncados` | sim/nao | `n_commits < total_commits_api` (limite de `--max-paginas`) |
+| `n_merges` | inteiro | títulos que começam com `Merge ` |
+| `n_fix` | inteiro | títulos com `fix`, `hotfix` ou `revert` como palavra inteira |
+| `n_fix_amplo` | inteiro | títulos com as variantes amplas (`fixes`, `bugfix`, `reverted`…), sem merges |
+| `n_fix_deps` | inteiro | títulos de `n_fix` que são atualização de dependência |
+| `notas_mencionam_correcao` | sim/nao | nome ou notas da release com as palavras amplas |
+| `corretiva_<critério>` | sim/nao/vazio | decisão de cada critério (vazio = indeterminado) |
+| `situacao_cfr` | texto | `falhou`, `nao_falhou` ou `censurada`, pelo critério padrão (`semver_e_mensagem`) |
+
+`cfr_entrega_repos.csv`: uma linha por repositório, pareamento e critério.
+
+| Coluna | Tipo | Unidade / origem |
+|---|---|---|
+| `full_name` | texto | `owner/repo` |
+| `status` | texto | `ok`, `erro_http_<código>` (listagem de releases) ou `erro: <mensagem>` |
+| `pareamento` / `criterio` | texto | versão da heurística |
+| `cfr_b` | decimal | **proporção (0 a 1)**, `releases_falharam / releases_avaliadas` (vazio sem releases avaliadas) |
+| `releases_avaliadas` | inteiro | releases da janela publicadas até 7 dias antes do fim dela |
+| `releases_falharam` | inteiro | releases avaliadas seguidas, em até 7 dias, por uma corretiva que as corrige |
+| `releases_censuradas` | inteiro | releases dos últimos 7 dias da janela |
+| `releases_corretivas` | inteiro | releases da janela que o critério marcou como corretivas |
+| `releases_indeterminadas` | inteiro | releases da janela em que o critério ficou indeterminado (contam como não corretivas) |
+| `compares_404` / `compares_erro` / `compares_truncados` | inteiro | problemas na coleta dos commits |
 
 ## Testes
 
