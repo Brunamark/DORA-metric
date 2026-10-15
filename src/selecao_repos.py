@@ -17,9 +17,9 @@ Cache em disco + retomada: toda resposta da API é salva em --cache. Se o script
 for interrompido (rate limit, rede, Ctrl+C), rodar o mesmo comando continua de
 onde parou, sem repetir chamadas.
 
-Uso:
+Uso (normalmente pelo pipeline: python src/pipeline.py, ver README):
     export GITHUB_TOKEN=ghp_xxx
-    python selecao_repos.py --inicio 2025-01-01 --fim 2025-12-31
+    python src/selecao_repos.py --inicio 2025-10-01 --fim 2026-10-01
 
 Dependências: pip install requests
 """
@@ -39,7 +39,14 @@ from pathlib import Path
 import requests
 
 API = "https://api.github.com"
+
+# Caminhos padrão relativos a src/, para o resultado não depender da pasta de onde se roda
+DIR_SRC = Path(__file__).resolve().parent
+DADOS_PADRAO = DIR_SRC / "data"
+CACHE_PADRAO = DIR_SRC / ".cache" / "github"
 MAX_RETRIES = 5
+# Respostas que dependem do token (e não do dado pedido): nunca são reaproveitadas do cache
+STATUS_NAO_CACHEAVEIS = frozenset({401})
 CONCLUSOES_VALIDAS = ("success", "failure", "timed_out", "startup_failure")
 FAIXAS_PADRAO = [
     "1000..2000",
@@ -51,9 +58,13 @@ FAIXAS_PADRAO = [
 ]
 
 
+class ErroDeToken(RuntimeError):
+    """A API recusou o token (HTTP 401): não adianta continuar nem salvar a resposta."""
+
+
 # --------------------------------------------------------------------------
 # Cliente HTTP com cache, rate limit e backoff
-# (se o Card C entregar a camada de cache/rate limit, troque esta classe por ela)
+# (camada única de cache/rate limit, usada por todas as etapas do pipeline)
 # --------------------------------------------------------------------------
 class GitHubClient:
     def __init__(self, token: str, cache_dir: str):
@@ -71,8 +82,10 @@ class GitHubClient:
         self.chamadas = 0
         self.cache_hits = 0
 
-    def _arquivo_cache(self, url: str, params: dict | None) -> Path:
+    def _arquivo_cache(self, url: str, params: dict | None, versao: str | None = None) -> Path:
         bruto = url + "?" + json.dumps(params or {}, sort_keys=True)
+        if versao:  # muda a chave quando o formato salvo muda (respostas antigas não são reaproveitadas)
+            bruto += "#" + versao
         return self.cache_dir / (hashlib.sha256(bruto.encode()).hexdigest() + ".json")
 
     @staticmethod
@@ -95,14 +108,15 @@ class GitHubClient:
         print(f"  [rate limit] aguardando {espera}s...", flush=True)
         time.sleep(espera)
 
-    def get(self, path: str, params: dict | None = None, enxugar=None):
+    def get(self, path: str, params: dict | None = None, enxugar=None, versao_cache: str | None = None):
         """Retorna (status, corpo_json, link_header). Usa cache em disco.
         `enxugar(corpo)`, se informado, reduz o corpo antes de salvar no cache
-        (ex.: descartar os diffs que o /compare devolve)."""
+        (ex.: descartar os diffs que o /compare devolve). `versao_cache` entra só na
+        chave do cache: trocar a versão força uma nova consulta quando o `enxugar` muda."""
         url = path if path.startswith("http") else API + path
-        arq = self._arquivo_cache(url, params)
-        if arq.exists():
-            d = json.loads(arq.read_text(encoding="utf-8"))
+        arq = self._arquivo_cache(url, params, versao_cache)
+        d = self._ler_cache(arq)
+        if d is not None:
             self.cache_hits += 1
             return d["status"], d["body"], d["link"]
 
@@ -119,6 +133,11 @@ class GitHubClient:
 
             self.chamadas += 1
 
+            if resp.status_code == 401:
+                raise ErroDeToken(
+                    "HTTP 401 (Bad credentials): o GITHUB_TOKEN é inválido ou expirou. "
+                    "Exporte um token válido e rode o mesmo comando: o que já foi coletado está no cache."
+                )
             if self._limitado(resp):
                 self._esperar_reset(resp)
                 continue
@@ -133,15 +152,36 @@ class GitHubClient:
             if resp.headers.get("X-RateLimit-Remaining") == "0":
                 self._esperar_reset(resp)
 
-            corpo = resp.json() if resp.content else None
+            try:
+                corpo = resp.json() if resp.content else None
+            except ValueError:  # corpo que não é JSON (ex.: página de erro em HTML)
+                corpo = {"message": resp.text[:500]}
             if enxugar and resp.status_code == 200 and corpo is not None:
                 corpo = enxugar(corpo)
             link = resp.headers.get("Link")
-            arq.write_text(
-                json.dumps({"status": resp.status_code, "body": corpo, "link": link}),
-                encoding="utf-8",
-            )
+            self._gravar_cache(arq, {"status": resp.status_code, "body": corpo, "link": link})
             return resp.status_code, corpo, link
+
+    @staticmethod
+    def _ler_cache(arq: Path) -> dict | None:
+        """Resposta salva, ou None se não houver, se estiver corrompida (gravação interrompida)
+        ou se for de um status que não deve ser reaproveitado (ex.: 401 de um token inválido)."""
+        try:
+            d = json.loads(arq.read_text(encoding="utf-8"))
+        except FileNotFoundError:
+            return None
+        except (ValueError, OSError):
+            return None
+        if d.get("status") in STATUS_NAO_CACHEAVEIS:
+            return None
+        return d
+
+    @staticmethod
+    def _gravar_cache(arq: Path, dados: dict) -> None:
+        """Grava num arquivo temporário e renomeia: um Ctrl+C no meio não deixa JSON pela metade."""
+        tmp = arq.with_suffix(".tmp")
+        tmp.write_text(json.dumps(dados), encoding="utf-8")
+        os.replace(tmp, arq)
 
     @staticmethod
     def _backoff(tentativa: int) -> None:
@@ -157,6 +197,31 @@ def parse_iso(texto: str | None) -> datetime | None:
     if not texto:
         return None
     return datetime.fromisoformat(texto.replace("Z", "+00:00"))
+
+
+def parse_janela(inicio: str, fim: str) -> tuple[datetime, datetime]:
+    """Janela de observação: do início do dia `inicio` ao fim do dia `fim` (UTC)."""
+    ini = datetime.strptime(inicio, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+    fim_dt = datetime.strptime(fim, "%Y-%m-%d").replace(hour=23, minute=59, second=59, tzinfo=timezone.utc)
+    if fim_dt <= ini:
+        sys.exit("--fim precisa ser posterior a --inicio.")
+    return ini, fim_dt
+
+
+def ler_token() -> str:
+    token = os.environ.get("GITHUB_TOKEN")
+    if not token:
+        sys.exit("Defina a variável de ambiente GITHUB_TOKEN (nunca commite o token).")
+    return token
+
+
+def ler_repos(caminho) -> list[dict]:
+    """Linhas de repos_selecionados.csv (aceita CSV salvo com BOM pelo Excel)."""
+    caminho = Path(caminho)
+    if not caminho.exists():
+        sys.exit(f"{caminho} não existe: rode antes a etapa de seleção.")
+    with caminho.open(newline="", encoding="utf-8-sig") as f:
+        return list(csv.DictReader(f))
 
 
 def ultima_pagina(link_header: str | None) -> int | None:
@@ -357,61 +422,38 @@ def funil_markdown(funil: list[dict]) -> str:
 # --------------------------------------------------------------------------
 # Main
 # --------------------------------------------------------------------------
-def main() -> None:
-    ap = argparse.ArgumentParser(description="Lab03S01 - seleção de repositórios, funil e metadados")
-    ap.add_argument("--inicio", required=True, help="início da janela (AAAA-MM-DD)")
-    ap.add_argument("--fim", required=True, help="fim da janela (AAAA-MM-DD)")
-    ap.add_argument("--alvo", type=int, default=100, help="nº de repositórios da amostra")
-    ap.add_argument("--min-releases", type=int, default=5)
-    ap.add_argument("--min-runs", type=int, default=50)
-    ap.add_argument("--seed", type=int, default=42)
-    ap.add_argument("--faixas", nargs="+", default=FAIXAS_PADRAO, help="faixas de estrelas da busca")
-    ap.add_argument("--saida", default="data", help="pasta dos CSVs de saída")
-    ap.add_argument("--cache", default=".cache/github", help="pasta do cache de respostas")
-    args = ap.parse_args()
-
-    token = os.environ.get("GITHUB_TOKEN")
-    if not token:
-        sys.exit("Defina a variável de ambiente GITHUB_TOKEN (nunca commite o token).")
-
-    ini = datetime.strptime(args.inicio, "%Y-%m-%d").replace(tzinfo=timezone.utc)
-    fim = datetime.strptime(args.fim, "%Y-%m-%d").replace(
-        hour=23, minute=59, second=59, tzinfo=timezone.utc
-    )
-    saida = Path(args.saida)
+def executar(client, ini: datetime, fim: datetime, saida: Path, alvo: int = 100,
+             min_releases: int = 5, min_runs: int = 50, seed: int = 42,
+             faixas: list[str] = FAIXAS_PADRAO) -> list[dict]:
+    """Seleção completa: busca, filtros, metadados e CSVs. Retorna os selecionados."""
     saida.mkdir(parents=True, exist_ok=True)
-    client = GitHubClient(token, args.cache)
+    candidatos = buscar_candidatos(client, faixas, ini)
+    random.Random(seed).shuffle(candidatos)
+    print(f"\n{len(candidatos)} candidatos únicos. Avaliando até {alvo} aprovados...\n")
 
-    try:
-        candidatos = buscar_candidatos(client, args.faixas, ini)
-        random.Random(args.seed).shuffle(candidatos)
-        print(f"\n{len(candidatos)} candidatos únicos. Avaliando até {args.alvo} aprovados...\n")
+    selecionados, descartados = [], []
+    alcancou = [0, 0, 0]
+    avaliados = 0
 
-        selecionados, descartados = [], []
-        alcancou = [0, 0, 0]
-        avaliados = 0
+    for repo in candidatos:
+        if len(selecionados) >= alvo:
+            break
+        avaliados += 1
+        linha, motivo, etapa = avaliar(client, repo, ini, fim, min_releases, min_runs)
+        for i in range(etapa):  # passou das etapas 0..etapa-1
+            alcancou[i] += 1
+        if linha:
+            selecionados.append(linha)
+            status = f"OK ({len(selecionados)}/{alvo})"
+        else:
+            descartados.append({"full_name": repo["full_name"], "motivo": motivo})
+            status = f"descartado: {motivo}"
+        print(f"[{avaliados}] {repo['full_name']} -> {status}", flush=True)
 
-        for repo in candidatos:
-            if len(selecionados) >= args.alvo:
-                break
-            avaliados += 1
-            linha, motivo, etapa = avaliar(client, repo, ini, fim, args.min_releases, args.min_runs)
-            for i in range(etapa):  # passou das etapas 0..etapa-1
-                alcancou[i] += 1
-            if linha:
-                selecionados.append(linha)
-                status = f"OK ({len(selecionados)}/{args.alvo})"
-            else:
-                descartados.append({"full_name": repo["full_name"], "motivo": motivo})
-                status = f"descartado: {motivo}"
-            print(f"[{avaliados}] {repo['full_name']} -> {status}", flush=True)
-    except KeyboardInterrupt:
-        sys.exit("\nInterrompido. As respostas já feitas estão no cache: rode o mesmo comando para retomar.")
+    if len(selecionados) < alvo:
+        print(f"\naviso: só {len(selecionados)} aprovados de {alvo}. Amplie as faixas de estrelas.")
 
-    if len(selecionados) < args.alvo:
-        print(f"\naviso: só {len(selecionados)} aprovados de {args.alvo}. Amplie as faixas de estrelas.")
-
-    funil = montar_funil(len(candidatos), avaliados, alcancou, args.min_releases, args.min_runs)
+    funil = montar_funil(len(candidatos), avaliados, alcancou, min_releases, min_runs)
 
     campos = [
         "full_name", "url", "stars", "language", "contributors",
@@ -428,6 +470,31 @@ def main() -> None:
         f"\nSalvo em {saida}/ (repos_selecionados.csv, descartados.csv, funil.csv, funil.md). "
         f"Chamadas à API: {client.chamadas} | respostas do cache: {client.cache_hits}"
     )
+    return selecionados
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser(description="Lab03S01 - seleção de repositórios, funil e metadados")
+    ap.add_argument("--inicio", required=True, help="início da janela (AAAA-MM-DD)")
+    ap.add_argument("--fim", required=True, help="fim da janela (AAAA-MM-DD)")
+    ap.add_argument("--alvo", type=int, default=100, help="nº de repositórios da amostra")
+    ap.add_argument("--min-releases", type=int, default=5)
+    ap.add_argument("--min-runs", type=int, default=50)
+    ap.add_argument("--seed", type=int, default=42)
+    ap.add_argument("--faixas", nargs="+", default=FAIXAS_PADRAO, help="faixas de estrelas da busca")
+    ap.add_argument("--saida", default=str(DADOS_PADRAO), help="pasta dos CSVs de saída")
+    ap.add_argument("--cache", default=str(CACHE_PADRAO), help="pasta do cache de respostas")
+    args = ap.parse_args()
+
+    ini, fim = parse_janela(args.inicio, args.fim)
+    client = GitHubClient(ler_token(), args.cache)
+    try:
+        executar(client, ini, fim, Path(args.saida), args.alvo, args.min_releases,
+                 args.min_runs, args.seed, args.faixas)
+    except ErroDeToken as exc:
+        sys.exit(str(exc))
+    except KeyboardInterrupt:
+        sys.exit("\nInterrompido. As respostas já feitas estão no cache: rode o mesmo comando para retomar.")
 
 
 if __name__ == "__main__":
