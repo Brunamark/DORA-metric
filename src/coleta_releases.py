@@ -23,17 +23,15 @@ Saídas em --saida:
 
 Usa o mesmo cliente com cache/retomada de selecao_repos.py.
 
-Uso:
+Uso (normalmente pelo pipeline: python src/pipeline.py, ver README):
     export GITHUB_TOKEN=ghp_xxx
-    python coleta_releases.py --inicio 2025-10-01 --fim 2026-10-01
+    python src/coleta_releases.py --inicio 2025-10-01 --fim 2026-10-01
 """
 
 import argparse
-import csv
-import os
 import re
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from pathlib import Path
 from urllib.parse import quote
 
@@ -43,7 +41,16 @@ from metricas import (
     mediana_lead_time_commit,
     mediana_lead_time_release,
 )
-from selecao_repos import GitHubClient, parse_iso, salvar_csv
+from selecao_repos import (
+    CACHE_PADRAO,
+    DADOS_PADRAO,
+    GitHubClient,
+    ler_repos,
+    ler_token,
+    parse_iso,
+    parse_janela,
+    salvar_csv,
+)
 
 # A listagem de releases vem ordenada por created_at (data do commit da tag), que pode
 # ser bem anterior ao published_at: só paramos de paginar com essa folga.
@@ -254,56 +261,34 @@ def processar_repo(client, fn: str, ini: datetime, fim: datetime) -> dict:
 # --------------------------------------------------------------------------
 # Main
 # --------------------------------------------------------------------------
-def main() -> None:
-    ap = argparse.ArgumentParser(description="Lab03S01 - releases, commits entre releases e lead time")
-    ap.add_argument("--inicio", required=True, help="início da janela (AAAA-MM-DD)")
-    ap.add_argument("--fim", required=True, help="fim da janela (AAAA-MM-DD)")
-    ap.add_argument("--repos", default="data/repos_selecionados.csv", help="CSV com a coluna full_name")
-    ap.add_argument("--saida", default="data", help="pasta dos CSVs de saída")
-    ap.add_argument("--cache", default=".cache/github", help="pasta do cache de respostas")
-    args = ap.parse_args()
-
-    token = os.environ.get("GITHUB_TOKEN")
-    if not token:
-        sys.exit("Defina a variável de ambiente GITHUB_TOKEN (nunca commite o token).")
-
-    ini = datetime.strptime(args.inicio, "%Y-%m-%d").replace(tzinfo=timezone.utc)
-    fim = datetime.strptime(args.fim, "%Y-%m-%d").replace(
-        hour=23, minute=59, second=59, tzinfo=timezone.utc
-    )
-    with open(args.repos, newline="", encoding="utf-8-sig") as f:  # aceita CSV salvo com BOM (Excel)
-        repos = [linha["full_name"] for linha in csv.DictReader(f)]
-
-    saida = Path(args.saida)
+def executar(client, ini: datetime, fim: datetime, repos: list[dict], saida: Path) -> list[dict]:
+    """Coleta releases, tags e commits de todos os repositórios e grava os CSVs.
+    Retorna os resumos por repositório."""
     saida.mkdir(parents=True, exist_ok=True)
-    client = GitHubClient(token, args.cache)
-
     todas_releases, todos_commits, todas_tags, resumos = [], [], [], []
-    try:
-        for i, fn in enumerate(repos, 1):
-            resultado = processar_repo(client, fn, ini, fim)
-            todas_releases.extend(resultado["releases"])
-            todos_commits.extend(resultado["commits"])
-            todas_tags.extend(resultado["tags"])
-            r = resultado["resumo"]
-            resumos.append(r)
-            problemas = [
-                f"{campo}={r[campo]}"
-                for campo in ("status_releases", "status_tags")
-                if r[campo] != "ok"
-            ] + [
-                f"{campo}={r[campo]}"
-                for campo in ("releases_404", "releases_erro", "releases_commits_incompletos",
-                              "commits_lead_time_negativo")
-                if r[campo]
-            ]
-            print(
-                f"[{i}/{len(repos)}] {fn} -> {r['releases_calculadas']} releases, {r['commits']} commits"
-                + (f" | {', '.join(problemas)}" if problemas else ""),
-                flush=True,
-            )
-    except KeyboardInterrupt:
-        sys.exit("\nInterrompido. As respostas já feitas estão no cache: rode o mesmo comando para retomar.")
+    for i, repo in enumerate(repos, 1):
+        fn = repo["full_name"]
+        resultado = processar_repo(client, fn, ini, fim)
+        todas_releases.extend(resultado["releases"])
+        todos_commits.extend(resultado["commits"])
+        todas_tags.extend(resultado["tags"])
+        r = resultado["resumo"]
+        resumos.append(r)
+        problemas = [
+            f"{campo}={r[campo]}"
+            for campo in ("status_releases", "status_tags")
+            if r[campo] != "ok"
+        ] + [
+            f"{campo}={r[campo]}"
+            for campo in ("releases_404", "releases_erro", "releases_commits_incompletos",
+                          "commits_lead_time_negativo")
+            if r[campo]
+        ]
+        print(
+            f"[{i}/{len(repos)}] {fn} -> {r['releases_calculadas']} releases, {r['commits']} commits"
+            + (f" | {', '.join(problemas)}" if problemas else ""),
+            flush=True,
+        )
 
     salvar_csv(saida / "releases.csv", CAMPOS_RELEASES, todas_releases)
     salvar_csv(saida / "commits_releases.csv", CAMPOS_COMMITS, todos_commits)
@@ -322,6 +307,25 @@ def main() -> None:
         f"Salvo em {saida}/ (releases.csv, commits_releases.csv, tags.csv, lead_time_repos.csv). "
         f"Chamadas à API: {client.chamadas} | respostas do cache: {client.cache_hits}"
     )
+    return resumos
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser(description="Lab03S01 - releases, commits entre releases e lead time")
+    ap.add_argument("--inicio", required=True, help="início da janela (AAAA-MM-DD)")
+    ap.add_argument("--fim", required=True, help="fim da janela (AAAA-MM-DD)")
+    ap.add_argument("--repos", default=str(DADOS_PADRAO / "repos_selecionados.csv"),
+                    help="CSV com a coluna full_name")
+    ap.add_argument("--saida", default=str(DADOS_PADRAO), help="pasta dos CSVs de saída")
+    ap.add_argument("--cache", default=str(CACHE_PADRAO), help="pasta do cache de respostas")
+    args = ap.parse_args()
+
+    ini, fim = parse_janela(args.inicio, args.fim)
+    client = GitHubClient(ler_token(), args.cache)
+    try:
+        executar(client, ini, fim, ler_repos(args.repos), Path(args.saida))
+    except KeyboardInterrupt:
+        sys.exit("\nInterrompido. As respostas já feitas estão no cache: rode o mesmo comando para retomar.")
 
 
 if __name__ == "__main__":

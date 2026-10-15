@@ -149,3 +149,74 @@ def caminho_tags():
 
 def caminho_compare(base, head):
     return f"/repos/{REPO}/compare/{base}...{head}"
+
+
+# --------------------------------------------------------------------------
+# Coleta de workflow runs: cliente falso que responde pelo filtro created
+# --------------------------------------------------------------------------
+class ClienteRunsFalso:
+    """Simula GitHubClient.get para /actions/runs. `runs` é a "base" do repositório:
+    a resposta filtra por created, branch e event e pagina de 100 em 100, como a API,
+    devolvendo no máximo `teto` runs por consulta (total_count continua sendo o total real).
+    `erros` = {created: status} força um erro HTTP numa fatia."""
+
+    def __init__(self, runs, teto=1000, erros=None):
+        self.runs = runs
+        self.teto = teto
+        self.erros = erros or {}
+        self.chamadas = []
+
+    @staticmethod
+    def _intervalo(created):
+        def ler(t):
+            if "T" in t:
+                return datetime.strptime(t, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+            return datetime.strptime(t, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+
+        a, b = created.split("..")
+        ini, fim = ler(a), ler(b)
+        if "T" not in b:
+            fim = fim.replace(hour=23, minute=59, second=59)
+        return ini, fim
+
+    def get(self, path, params=None, enxugar=None):
+        params = params or {}
+        self.chamadas.append((path, params.get("created"), params.get("page", 1)))
+        if params.get("created") in self.erros:
+            return self.erros[params["created"]], {"message": "erro"}, None
+        ini, fim = self._intervalo(params["created"])
+        casam = [
+            r for r in self.runs
+            if ini <= datetime.fromisoformat(r["created_at"].replace("Z", "+00:00")) <= fim
+            and r["head_branch"] == params["branch"] and r["event"] == params["event"]
+        ]
+        visiveis = casam[: self.teto]
+        pagina, por_pagina = params.get("page", 1), params.get("per_page", 30)
+        fatia = visiveis[(pagina - 1) * por_pagina: pagina * por_pagina]
+        tem_mais = pagina * por_pagina < len(visiveis)
+        link = f'<https://api.github.com/x?page={pagina + 1}>; rel="next"' if tem_mais else None
+        corpo = {"total_count": len(casam), "workflow_runs": fatia}
+        if enxugar:
+            corpo = enxugar(corpo)
+        return 200, corpo, link
+
+
+def run_api(run_id, conclusao, criado, fim=None, workflow_id=1, branch="main", event="push",
+            iniciado=True):
+    """Run no formato da API (campos usados + um campo pesado que deve ser descartado)."""
+    criado_dt = datetime.fromisoformat(criado.replace("Z", "+00:00"))
+    fim_dt = datetime.fromisoformat(fim.replace("Z", "+00:00")) if fim else criado_dt + timedelta(minutes=5)
+    return {
+        "id": run_id,
+        "workflow_id": workflow_id,
+        "name": f"workflow-{workflow_id}",
+        "head_branch": branch,
+        "event": event,
+        "status": "completed" if conclusao else "in_progress",
+        "conclusion": conclusao,
+        "created_at": criado,
+        "run_started_at": criado if iniciado else None,
+        "updated_at": fim_dt.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "run_attempt": 1,
+        "head_commit": {"message": "campo pesado que não vai para o cache"},
+    }
