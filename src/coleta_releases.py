@@ -89,9 +89,10 @@ def publicada(release: dict) -> bool:
 # --------------------------------------------------------------------------
 # Coleta
 # --------------------------------------------------------------------------
-def listar_releases(client, fn: str, ini: datetime) -> tuple[int, list[dict]]:
+def listar_releases(client, fn: str, ini: datetime, folga: timedelta = FOLGA_PAGINACAO) -> tuple[int, list[dict]]:
     """Releases do repositório, até achar uma publicada antes da janela (a anterior
-    da primeira release da janela). Retorna (status_http, releases)."""
+    da primeira release da janela) e passar `folga` antes do início dela.
+    Retorna (status_http, releases)."""
     releases = []
     pagina = 1
     while True:
@@ -103,7 +104,7 @@ def listar_releases(client, fn: str, ini: datetime) -> tuple[int, list[dict]]:
         releases.extend(corpo)
         achou_anterior = any(publicada(r) and parse_iso(r["published_at"]) < ini for r in releases)
         mais_antiga = min(parse_iso(r["created_at"]) for r in corpo)
-        if not tem_proxima(link) or (achou_anterior and mais_antiga < ini - FOLGA_PAGINACAO):
+        if not tem_proxima(link) or (achou_anterior and mais_antiga < ini - folga):
             break
         pagina += 1
     return 200, releases
@@ -146,9 +147,12 @@ def _enxugar_compare(corpo: dict) -> dict:
     }
 
 
-def commits_entre(client, fn: str, base: str, head: str) -> tuple[int, list[dict], int | None]:
+def commits_entre(client, fn: str, base: str, head: str,
+                  max_paginas: int | None = None) -> tuple[int, list[dict], int | None]:
     """Commits em head que não estão em base. Retorna (status_http, commits, total_commits
-    informado pela API); status diferente de 200 significa que a comparação falhou (ex.: 404)."""
+    informado pela API); status diferente de 200 significa que a comparação falhou (ex.: 404).
+    `max_paginas` limita a paginação (100 commits por página); comparação truncada tem
+    len(commits) < total_commits. As chamadas usam a mesma chave de cache com ou sem limite."""
     caminho = f"/repos/{fn}/compare/{quote(base, safe='')}...{quote(head, safe='')}"
     commits = []
     pagina = 1
@@ -160,7 +164,7 @@ def commits_entre(client, fn: str, base: str, head: str) -> tuple[int, list[dict
         if st != 200:
             return st, [], None
         commits.extend(corpo.get("commits", []))
-        if not tem_proxima(link):
+        if not tem_proxima(link) or (max_paginas is not None and pagina >= max_paginas):
             break
         pagina += 1
     return 200, commits, corpo.get("total_commits")
