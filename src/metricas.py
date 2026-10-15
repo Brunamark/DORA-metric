@@ -27,6 +27,16 @@ success é sucesso; failure, timed_out e startup_failure são falha; os demais v
       sucesso até o fim da janela é censurado: fica fora da mediana, mas é contado.
   Tempo de recuperação: mediana das durações de todos os episódios fechados de todos
       os workflows, em horas (float).
+
+Classificação DORA (Lab03S02)
+-----------------------------
+Cortes fixos do enunciado (seção 5, RQ 07), iguais para toda a turma. Unidades de entrada:
+  frequencia_deploy   releases por semana
+  lead_time           dias (mediana)
+  cfr                 proporção de 0 a 1 (0,15 = 15%)
+  tempo_recuperacao   horas (mediana)
+Cada métrica vira Elite/High/Medium/Low (notas 4/3/2/1); a classificação geral é a
+mediana das quatro notas, arredondada para baixo.
 """
 
 from collections import defaultdict
@@ -192,3 +202,135 @@ def proporcao_censurados(episodios: Iterable[Episodio]) -> float | None:
     if not episodios:
         return None
     return sum(e.censurado for e in episodios) / len(episodios)
+
+
+# --------------------------------------------------------------------------
+# Classificação DORA (Lab03S02)
+# --------------------------------------------------------------------------
+SEGUNDOS_POR_SEMANA = 7 * SEGUNDOS_POR_DIA
+DIAS_POR_SEMANA = 7
+DIAS_POR_MES = 30  # o enunciado usa "30 dias" como corte de lead time
+HORAS_POR_DIA = 24
+HORAS_POR_SEMANA = 7 * HORAS_POR_DIA
+SEMANAS_POR_ANO = 365 / 7  # ≈ 52,1: nº de semanas da janela de 12 meses
+SEMANAS_POR_MES = SEMANAS_POR_ANO / 12
+
+# Tolerância para comparar valores nos cortes (ex.: 12 / 52,142857... deve valer 1 por mês)
+_TOLERANCIA = 1e-9
+
+ELITE, HIGH, MEDIUM, LOW = "Elite", "High", "Medium", "Low"
+NOTAS = {ELITE: 4, HIGH: 3, MEDIUM: 2, LOW: 1}
+CATEGORIA_DA_NOTA = {nota: categoria for categoria, nota in NOTAS.items()}
+
+FREQUENCIA_DEPLOY = "frequencia_deploy"
+LEAD_TIME = "lead_time"
+CFR = "cfr"
+TEMPO_RECUPERACAO = "tempo_recuperacao"
+METRICAS_DORA = (FREQUENCIA_DEPLOY, LEAD_TIME, CFR, TEMPO_RECUPERACAO)
+
+
+def frequencia_deploy(n_releases: int, ini: datetime, fim: datetime) -> float:
+    """Deployment frequency (RQ 01): releases publicadas na janela por semana.
+    A janela vem de `ini` e `fim`: 365 dias valem ≈ 52,1 semanas."""
+    if n_releases < 0:
+        raise ValueError("n_releases não pode ser negativo")
+    semanas = (fim - ini).total_seconds() / SEGUNDOS_POR_SEMANA
+    if semanas <= 0:
+        raise ValueError("a janela precisa terminar depois de começar")
+    return n_releases / semanas
+
+
+def _maior_ou_igual(valor: float, limite: float) -> bool:
+    return valor >= limite - _TOLERANCIA
+
+
+def _menor_ou_igual(valor: float, limite: float) -> bool:
+    return valor <= limite + _TOLERANCIA
+
+
+def _menor_que(valor: float, limite: float) -> bool:
+    return valor < limite - _TOLERANCIA
+
+
+def _classificar_frequencia(valor: float) -> str:
+    # Elite >= 7/semana; High >= 1/semana; Medium >= 1/mês; Low < 1/mês
+    if _maior_ou_igual(valor, 7):
+        return ELITE
+    if _maior_ou_igual(valor, 1):
+        return HIGH
+    if _maior_ou_igual(valor, 1 / SEMANAS_POR_MES):
+        return MEDIUM
+    return LOW
+
+
+def _classificar_lead_time(dias: float) -> str:
+    # Elite < 1 dia; High 1 dia a < 1 semana; Medium 1 semana a < 30 dias; Low >= 30 dias
+    if _menor_que(dias, 1):
+        return ELITE
+    if _menor_que(dias, DIAS_POR_SEMANA):
+        return HIGH
+    if _menor_que(dias, DIAS_POR_MES):
+        return MEDIUM
+    return LOW
+
+
+def _classificar_cfr(proporcao: float) -> str:
+    # Elite <= 15%; High > 15% e <= 30%; Medium > 30% e <= 45%; Low > 45%
+    if _menor_ou_igual(proporcao, 0.15):
+        return ELITE
+    if _menor_ou_igual(proporcao, 0.30):
+        return HIGH
+    if _menor_ou_igual(proporcao, 0.45):
+        return MEDIUM
+    return LOW
+
+
+def _classificar_recuperacao(horas: float) -> str:
+    # Elite < 1 hora; High 1 hora a < 1 dia; Medium 1 dia a < 1 semana; Low >= 1 semana
+    if _menor_que(horas, 1):
+        return ELITE
+    if _menor_que(horas, HORAS_POR_DIA):
+        return HIGH
+    if _menor_que(horas, HORAS_POR_SEMANA):
+        return MEDIUM
+    return LOW
+
+
+_CLASSIFICADORES = {
+    FREQUENCIA_DEPLOY: _classificar_frequencia,
+    LEAD_TIME: _classificar_lead_time,
+    CFR: _classificar_cfr,
+    TEMPO_RECUPERACAO: _classificar_recuperacao,
+}
+
+
+def classificar(metrica: str, valor: float | None) -> str | None:
+    """Categoria DORA (Elite, High, Medium ou Low) de um valor, pelos cortes fixos do enunciado.
+    `metrica` é uma de METRICAS_DORA. Valor ausente (None) não tem categoria."""
+    if metrica not in _CLASSIFICADORES:
+        raise ValueError(f"métrica desconhecida: {metrica!r} (use uma de {', '.join(METRICAS_DORA)})")
+    if valor is None:
+        return None
+    if valor < 0:
+        raise ValueError(f"{metrica} não pode ser negativa: {valor}")
+    return _CLASSIFICADORES[metrica](valor)
+
+
+def nota(categoria: str) -> int:
+    """Nota da categoria: Elite 4, High 3, Medium 2, Low 1."""
+    try:
+        return NOTAS[categoria]
+    except KeyError:
+        raise ValueError(f"categoria desconhecida: {categoria!r}") from None
+
+
+def classificacao_geral(notas: Iterable[int]) -> str:
+    """Categoria geral do repositório: mediana das quatro notas (4/3/2/1), arredondada para baixo.
+    Exemplo: (4, 3, 3, 1) tem mediana 3, logo High."""
+    notas = list(notas)
+    if len(notas) != len(METRICAS_DORA):
+        raise ValueError(f"esperadas {len(METRICAS_DORA)} notas, recebidas {len(notas)}")
+    invalidas = [n for n in notas if n not in CATEGORIA_DA_NOTA]
+    if invalidas:
+        raise ValueError(f"notas devem ser 1, 2, 3 ou 4: {invalidas}")
+    return CATEGORIA_DA_NOTA[int(median(notas))]  # int() arredonda a mediana para baixo
