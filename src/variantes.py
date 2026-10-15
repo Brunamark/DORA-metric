@@ -2,6 +2,15 @@
 """
 Lab03S02 - variantes de unidade de deploy da RQ 07 (issue #8).
 
+Release + pré-release (combinação C2):
+  Mesma regra do lead time da definição principal (coleta_releases.py), mas a unidade de
+  deploy passa a incluir as pré-releases: entre todas as releases não draft, ordenadas por
+  published_at, cada uma tem como anterior a imediatamente anterior. A primeira da história
+  é ignorada. Para cada release não draft da janela, os commits vêm de
+  compare/{anterior}...{release}. Reaproveita listar_releases() e commits_entre() da etapa
+  releases: a listagem e os pares iguais aos da definição principal saem do cache, e só os
+  pares que envolvem pré-releases geram chamadas novas.
+
 Datas das tags (unidade "tag", combinação C3):
   A data de uma tag é a data do commit para o qual ela aponta (enunciado, seção 4). A
   listagem REST de /tags, feita pela etapa releases, já traz o sha desse commit (inclusive
@@ -13,8 +22,9 @@ Não altera as saídas das outras etapas além da coluna commit_date do tags.csv
 precisa rodar depois da etapa releases (o pipeline garante a ordem).
 
 Saídas em --saida:
+  releases_c2.csv       releases não draft da janela, com o par e o lead time da C2
   tags.csv              tags de cada repositório, agora com commit_date
-  variantes_repos.csv   resumo por repositório
+  variantes_repos.csv   resumo por repositório (C2 e datas das tags)
 
 Uso (normalmente pelo pipeline: python src/pipeline.py, ver README):
     export GITHUB_TOKEN=ghp_xxx
@@ -28,6 +38,13 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+from coleta_releases import commits_entre, listar_releases
+from metricas import (
+    lead_time_commit,
+    lead_time_release,
+    mediana_lead_time_commit,
+    mediana_lead_time_release,
+)
 from selecao_repos import (
     CACHE_PADRAO,
     DADOS_PADRAO,
@@ -35,6 +52,7 @@ from selecao_repos import (
     GitHubClient,
     ler_repos,
     ler_token,
+    parse_iso,
     parse_janela,
     salvar_csv,
 )
@@ -42,8 +60,104 @@ from selecao_repos import (
 TAMANHO_LOTE = 100   # shas por consulta GraphQL
 RE_SHA = re.compile(r"^[0-9a-f]{40}$")
 
+CAMPOS_RELEASES_C2 = [
+    "full_name", "tag_name", "prerelease", "published_at", "tag_anterior",
+    "status", "n_commits", "total_commits_api", "lead_time_release_dias",
+]
 CAMPOS_TAGS = ["full_name", "tag_name", "sha", "commit_date"]
-CAMPOS_RESUMO = ["full_name", "status_tags_datas", "tags", "tags_sem_data"]
+CAMPOS_RESUMO_C2 = [
+    "status_releases_c2", "releases_na_janela_c2", "releases_calculadas_c2",
+    "releases_sem_commits_c2", "releases_404_c2", "releases_erro_c2",
+    "releases_commits_incompletos_c2", "commits_c2", "commits_lead_time_negativo_c2",
+    "lead_time_release_mediana_dias_c2", "lead_time_commit_mediana_dias_c2",
+]
+CAMPOS_RESUMO_TAGS = ["status_tags_datas", "tags", "tags_sem_data"]
+CAMPOS_RESUMO = ["full_name", *CAMPOS_RESUMO_C2, *CAMPOS_RESUMO_TAGS]
+
+
+# --------------------------------------------------------------------------
+# Release + pré-release (C2)
+# --------------------------------------------------------------------------
+def nao_draft(release: dict) -> bool:
+    """Release publicada ou pré-release: a unidade de deploy da C2."""
+    return not release.get("draft") and bool(release.get("published_at"))
+
+
+def _resumo_c2_vazio() -> dict:
+    resumo = {campo: 0 for campo in CAMPOS_RESUMO_C2}
+    resumo.update({
+        "status_releases_c2": "ok",
+        "lead_time_release_mediana_dias_c2": "",
+        "lead_time_commit_mediana_dias_c2": "",
+    })
+    return resumo
+
+
+def lead_time_c2(client, fn: str, ini: datetime, fim: datetime) -> tuple[list[dict], dict]:
+    """Linhas de releases_c2.csv (releases não draft da janela) e as colunas _c2 do resumo."""
+    resumo = _resumo_c2_vazio()
+    st, releases = listar_releases(client, fn, ini)
+    if st != 200:
+        resumo["status_releases_c2"] = f"erro_http_{st}"
+        return [], resumo
+
+    ordenadas = sorted((r for r in releases if nao_draft(r)), key=lambda r: parse_iso(r["published_at"]))
+    linhas, para_medianas = [], []
+    for i, r in enumerate(ordenadas):
+        pub = parse_iso(r["published_at"])
+        if not ini <= pub <= fim:
+            continue
+        resumo["releases_na_janela_c2"] += 1
+        linha = {
+            "full_name": fn,
+            "tag_name": r["tag_name"],
+            "prerelease": bool(r.get("prerelease")),
+            "published_at": r["published_at"],
+            "tag_anterior": "",
+            "status": "",
+            "n_commits": "",
+            "total_commits_api": "",
+            "lead_time_release_dias": "",
+        }
+        linhas.append(linha)
+        if i == 0:
+            linha["status"] = "primeira_release"
+            continue
+        anterior = ordenadas[i - 1]["tag_name"]
+        linha["tag_anterior"] = anterior
+
+        st, commits, total_api = commits_entre(client, fn, anterior, r["tag_name"])
+        if st == 404:
+            linha["status"] = "tag_404"
+            resumo["releases_404_c2"] += 1
+            continue
+        if st != 200:
+            linha["status"] = f"erro_http_{st}"
+            resumo["releases_erro_c2"] += 1
+            continue
+
+        datas = [parse_iso(c["commit"]["author"]["date"]) for c in commits]
+        linha["n_commits"] = len(datas)
+        linha["total_commits_api"] = "" if total_api is None else total_api
+        if total_api is not None and total_api != len(datas):
+            resumo["releases_commits_incompletos_c2"] += 1
+        if not datas:
+            linha["status"] = "sem_commits"
+            resumo["releases_sem_commits_c2"] += 1
+            continue
+
+        linha["status"] = "ok"
+        linha["lead_time_release_dias"] = round(lead_time_release(pub, datas), 4)
+        resumo["releases_calculadas_c2"] += 1
+        resumo["commits_c2"] += len(datas)
+        resumo["commits_lead_time_negativo_c2"] += sum(lt < 0 for lt in lead_time_commit(pub, datas))
+        para_medianas.append((pub, datas))
+
+    med_rel = mediana_lead_time_release(para_medianas)
+    med_commit = mediana_lead_time_commit(para_medianas)
+    resumo["lead_time_release_mediana_dias_c2"] = "" if med_rel is None else round(med_rel, 4)
+    resumo["lead_time_commit_mediana_dias_c2"] = "" if med_commit is None else round(med_commit, 4)
+    return linhas, resumo
 
 
 # --------------------------------------------------------------------------
@@ -88,14 +202,13 @@ def datas_dos_commits(client, fn: str, shas) -> tuple[str, dict[str, str]]:
 
 
 def datar_tags(client, fn: str, tags: list[dict]) -> tuple[list[dict], dict]:
-    """Linhas do tags.csv do repositório com commit_date e o resumo da etapa."""
+    """Linhas do tags.csv do repositório com commit_date e as colunas de tags do resumo."""
     status, datas = datas_dos_commits(client, fn, (t["sha"] for t in tags))
     linhas = [
         {"full_name": fn, "tag_name": t["tag_name"], "sha": t["sha"], "commit_date": datas.get(t["sha"], "")}
         for t in tags
     ]
     resumo = {
-        "full_name": fn,
         "status_tags_datas": status,
         "tags": len(linhas),
         "tags_sem_data": sum(not linha["commit_date"] for linha in linhas),
@@ -119,20 +232,28 @@ def ler_tags(caminho: Path) -> dict[str, list[dict]]:
 # Etapa do pipeline
 # --------------------------------------------------------------------------
 def executar(client, ini: datetime, fim: datetime, repos: list[dict], saida: Path) -> list[dict]:
-    """Data as tags de todos os repositórios e grava os CSVs. Retorna os resumos."""
+    """Calcula a C2 e data as tags de todos os repositórios e grava os CSVs.
+    Retorna os resumos (uma linha por repositório, mesmo quando a API falha)."""
     tags_por_repo = ler_tags(saida / "tags.csv")
-    todas_tags, resumos = [], []
+    todas_releases_c2, todas_tags, resumos = [], [], []
     for i, repo in enumerate(repos, 1):
         fn = repo["full_name"]
-        linhas, resumo = datar_tags(client, fn, tags_por_repo.get(fn, []))
-        todas_tags.extend(linhas)
-        resumos.append(resumo)
-        problemas = [f"status_tags_datas={resumo['status_tags_datas']}"] if resumo["status_tags_datas"] != "ok" else []
-        if resumo["tags_sem_data"]:
-            problemas.append(f"tags_sem_data={resumo['tags_sem_data']}")
+        linhas_c2, resumo_c2 = lead_time_c2(client, fn, ini, fim)
+        linhas_tags, resumo_tags = datar_tags(client, fn, tags_por_repo.get(fn, []))
+        todas_releases_c2.extend(linhas_c2)
+        todas_tags.extend(linhas_tags)
+        r = {"full_name": fn, **resumo_c2, **resumo_tags}
+        resumos.append(r)
+        problemas = [
+            f"{campo}={r[campo]}" for campo in ("status_releases_c2", "status_tags_datas") if r[campo] != "ok"
+        ] + [
+            f"{campo}={r[campo]}"
+            for campo in ("releases_404_c2", "releases_erro_c2", "releases_commits_incompletos_c2", "tags_sem_data")
+            if r[campo]
+        ]
         print(
-            f"[{i}/{len(repos)}] {fn} -> {resumo['tags']} tags"
-            + (f" | {', '.join(problemas)}" if problemas else ""),
+            f"[{i}/{len(repos)}] {fn} -> C2: {r['releases_calculadas_c2']} releases, {r['commits_c2']} commits"
+            f" | {r['tags']} tags" + (f" | {', '.join(problemas)}" if problemas else ""),
             flush=True,
         )
 
@@ -142,13 +263,21 @@ def executar(client, ini: datetime, fim: datetime, repos: list[dict], saida: Pat
         if fn not in processados:
             todas_tags.extend({campo: t.get(campo, "") for campo in CAMPOS_TAGS} for t in tags)
 
+    salvar_csv(saida / "releases_c2.csv", CAMPOS_RELEASES_C2, todas_releases_c2)
     salvar_csv(saida / "tags.csv", CAMPOS_TAGS, todas_tags)
     salvar_csv(saida / "variantes_repos.csv", CAMPOS_RESUMO, resumos)
+
+    def total(campo):
+        return sum(r[campo] for r in resumos)
+
     print(
         f"\n{len(resumos)} repositórios processados "
-        f"({sum(r['status_tags_datas'] != 'ok' for r in resumos)} com erro ao datar tags). "
-        f"Tags sem data: {sum(r['tags_sem_data'] for r in resumos)} de {sum(r['tags'] for r in resumos)}.\n"
-        f"Salvo em {saida}/ (tags.csv, variantes_repos.csv). "
+        f"({sum(r['status_releases_c2'] != 'ok' for r in resumos)} com erro ao listar releases, "
+        f"{sum(r['status_tags_datas'] != 'ok' for r in resumos)} com erro ao datar tags). "
+        f"C2: releases puladas por 404: {total('releases_404_c2')} | outros erros: {total('releases_erro_c2')} | "
+        f"comparações incompletas: {total('releases_commits_incompletos_c2')}. "
+        f"Tags sem data: {total('tags_sem_data')} de {total('tags')}.\n"
+        f"Salvo em {saida}/ (releases_c2.csv, tags.csv, variantes_repos.csv). "
         f"Chamadas à API: {client.chamadas} | respostas do cache: {client.cache_hits}"
     )
     return resumos
