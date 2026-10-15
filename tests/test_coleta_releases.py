@@ -1,4 +1,11 @@
-from coleta_releases import commits_entre, listar_releases, listar_tags, processar_repo
+from coleta_releases import (
+    VERSAO_CACHE_COMPARE,
+    commits_entre,
+    listar_releases,
+    listar_tags,
+    primeira_linha,
+    processar_repo,
+)
 from conftest import (
     REPO,
     caminho_compare,
@@ -199,6 +206,41 @@ def test_compare_descarta_os_diffs_antes_do_cache(cliente):
     _, commits, _ = commits_entre(api, REPO, "v1.0", "v1.1")
 
     assert "files" not in commits[0]
+
+
+def test_compare_guarda_so_a_primeira_linha_da_mensagem(cliente):
+    api = cliente({(caminho_compare("v1.0", "v1.1"), 1): compare(
+        commit("a", "2026-03-02T00:00:00Z", "fix: crash ao abrir arquivo\n\nDetalhes do bug..."),
+    )})
+
+    _, commits, _ = commits_entre(api, REPO, "v1.0", "v1.1")
+
+    assert commits[0]["commit"]["message"] == "fix: crash ao abrir arquivo"
+
+
+def test_compare_usa_a_versao_do_cache_com_mensagem(cliente):
+    api = cliente({(caminho_compare("v1.0", "v1.1"), 1): compare(commit("a", "2026-03-02T00:00:00Z"))})
+
+    commits_entre(api, REPO, "v1.0", "v1.1")
+
+    assert api.versoes_cache[(caminho_compare("v1.0", "v1.1"), 1)] == VERSAO_CACHE_COMPARE
+
+
+def test_primeira_linha_trata_mensagem_vazia_e_limita_o_tamanho():
+    assert primeira_linha(None) == ""
+    assert primeira_linha("  revert: volta v2.3.0  \r\ncorpo") == "revert: volta v2.3.0"
+    assert len(primeira_linha("x" * 1000)) == 300
+
+
+def test_commits_da_release_saem_com_a_mensagem(cliente, janela, releases_v1_0_e_v1_1):
+    api = cliente({
+        (caminho_releases(), 1): (200, releases_v1_0_e_v1_1, None),
+        (caminho_compare("v1.0", "v1.1"), 1): compare(commit("a", "2026-03-02T00:00:00Z", "hotfix: token expirado")),
+    })
+
+    resultado = processar_repo(api, REPO, *janela)
+
+    assert resultado["commits"][0]["mensagem"] == "hotfix: token expirado"
 
 
 def test_tags_com_barra_sao_codificadas_na_url(cliente):

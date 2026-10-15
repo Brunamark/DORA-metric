@@ -76,8 +76,10 @@ class GitHubClient:
         self.chamadas = 0
         self.cache_hits = 0
 
-    def _arquivo_cache(self, url: str, params: dict | None) -> Path:
+    def _arquivo_cache(self, url: str, params: dict | None, versao: str | None = None) -> Path:
         bruto = url + "?" + json.dumps(params or {}, sort_keys=True)
+        if versao:  # muda a chave quando o formato salvo muda (respostas antigas não são reaproveitadas)
+            bruto += "#" + versao
         return self.cache_dir / (hashlib.sha256(bruto.encode()).hexdigest() + ".json")
 
     @staticmethod
@@ -100,12 +102,13 @@ class GitHubClient:
         print(f"  [rate limit] aguardando {espera}s...", flush=True)
         time.sleep(espera)
 
-    def get(self, path: str, params: dict | None = None, enxugar=None):
+    def get(self, path: str, params: dict | None = None, enxugar=None, versao_cache: str | None = None):
         """Retorna (status, corpo_json, link_header). Usa cache em disco.
         `enxugar(corpo)`, se informado, reduz o corpo antes de salvar no cache
-        (ex.: descartar os diffs que o /compare devolve)."""
+        (ex.: descartar os diffs que o /compare devolve). `versao_cache` entra só na
+        chave do cache: trocar a versão força uma nova consulta quando o `enxugar` muda."""
         url = path if path.startswith("http") else API + path
-        arq = self._arquivo_cache(url, params)
+        arq = self._arquivo_cache(url, params, versao_cache)
         if arq.exists():
             d = json.loads(arq.read_text(encoding="utf-8"))
             self.cache_hits += 1

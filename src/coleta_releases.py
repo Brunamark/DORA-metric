@@ -61,7 +61,12 @@ CAMPOS_RELEASES = [
     "na_janela", "tag_anterior", "status", "n_commits", "total_commits_api",
     "lead_time_release_dias",
 ]
-CAMPOS_COMMITS = ["full_name", "tag_name", "sha", "author_date", "lead_time_dias"]
+CAMPOS_COMMITS = ["full_name", "tag_name", "sha", "author_date", "lead_time_dias", "mensagem"]
+
+# Versão do formato do /compare salvo no cache. v2 inclui a mensagem do commit (usada pela
+# heurística de release corretiva do CFR b); respostas v1, sem mensagem, não são reaproveitadas.
+VERSAO_CACHE_COMPARE = "compare-v2-mensagem"
+TAMANHO_MAX_MENSAGEM = 300
 CAMPOS_TAGS = ["full_name", "tag_name", "sha"]
 CAMPOS_RESUMO = [
     "full_name", "status_releases", "status_tags",
@@ -117,12 +122,24 @@ def listar_tags(client, fn: str) -> tuple[int, list[dict]]:
         pagina += 1
 
 
+def primeira_linha(mensagem: str | None) -> str:
+    """Título do commit: primeira linha da mensagem, limitada a TAMANHO_MAX_MENSAGEM caracteres."""
+    return (mensagem or "").strip().split("\n", 1)[0].strip()[:TAMANHO_MAX_MENSAGEM]
+
+
 def _enxugar_compare(corpo: dict) -> dict:
-    """Guarda só o necessário do /compare (sem os diffs dos arquivos)."""
+    """Guarda só o necessário do /compare (sem os diffs dos arquivos): sha, data de autoria
+    e a primeira linha da mensagem de cada commit."""
     return {
         "total_commits": corpo.get("total_commits"),
         "commits": [
-            {"sha": c["sha"], "commit": {"author": {"date": c["commit"]["author"]["date"]}}}
+            {
+                "sha": c["sha"],
+                "commit": {
+                    "author": {"date": c["commit"]["author"]["date"]},
+                    "message": primeira_linha(c["commit"].get("message")),
+                },
+            }
             for c in corpo.get("commits", [])
         ],
     }
@@ -135,7 +152,10 @@ def commits_entre(client, fn: str, base: str, head: str) -> tuple[int, list[dict
     commits = []
     pagina = 1
     while True:
-        st, corpo, link = client.get(caminho, {"per_page": 100, "page": pagina}, enxugar=_enxugar_compare)
+        st, corpo, link = client.get(
+            caminho, {"per_page": 100, "page": pagina},
+            enxugar=_enxugar_compare, versao_cache=VERSAO_CACHE_COMPARE,
+        )
         if st != 200:
             return st, [], None
         commits.extend(corpo.get("commits", []))
@@ -246,6 +266,7 @@ def processar_repo(client, fn: str, ini: datetime, fim: datetime) -> dict:
                 "sha": c["sha"],
                 "author_date": c["commit"]["author"]["date"],
                 "lead_time_dias": round(lt, 4),
+                "mensagem": c["commit"].get("message", ""),
             })
             if lt < 0:
                 resumo["commits_lead_time_negativo"] += 1

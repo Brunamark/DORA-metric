@@ -87,10 +87,12 @@ class ClienteFalso:
     def __init__(self, respostas: dict):
         self.respostas = respostas
         self.chamadas = []
+        self.versoes_cache = {}
 
-    def get(self, path, params=None, enxugar=None):
+    def get(self, path, params=None, enxugar=None, versao_cache=None):
         pagina = (params or {}).get("page", 1)
         self.chamadas.append((path, pagina))
+        self.versoes_cache[(path, pagina)] = versao_cache
         status, corpo, link = self.respostas.get((path, pagina), (404, {"message": "Not Found"}, None))
         if enxugar and status == 200:
             corpo = enxugar(corpo)
@@ -126,8 +128,8 @@ def release(tag, publicada_em, draft=False, prerelease=False):
     }
 
 
-def commit(sha, data):
-    return {"sha": sha, "commit": {"author": {"date": data}}, "files": ["diff enorme"]}
+def commit(sha, data, mensagem="fix: corrige algo\n\nCorpo longo da mensagem que não vai para o cache."):
+    return {"sha": sha, "commit": {"author": {"date": data}, "message": mensagem}, "files": ["diff enorme"]}
 
 
 def compare(*commits, total=None):
@@ -179,7 +181,7 @@ class ClienteRunsFalso:
             fim = fim.replace(hour=23, minute=59, second=59)
         return ini, fim
 
-    def get(self, path, params=None, enxugar=None):
+    def get(self, path, params=None, enxugar=None, versao_cache=None):
         params = params or {}
         self.chamadas.append((path, params.get("created"), params.get("page", 1)))
         if params.get("created") in self.erros:
