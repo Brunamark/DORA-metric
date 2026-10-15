@@ -5,3 +5,8 @@ __pycache__/
 
 # Cache da API: os arquivos ja versionados continuam; respostas novas ficam so local
 src/.cache/
+
+# Saída grande demais para o GitHub (> 250 MB com 100 repositórios): é regerada pelo pipeline
+src/data/commits_releases.csv
+# Saída do teste rápido descrito no README
+teste_rapido/
