@@ -27,6 +27,7 @@ from selecao_repos import (
     CACHE_PADRAO,
     DADOS_PADRAO,
     FAIXAS_PADRAO,
+    ErroDeToken,
     GitHubClient,
     ler_repos,
     ler_token,
@@ -71,6 +72,8 @@ def main(argv=None) -> None:
                 else:
                     coleta_runs.executar(client, ini, fim, repos, saida)
             print(f"===== {etapa} concluída em {time.monotonic() - comeco:.0f}s =====\n", flush=True)
+    except ErroDeToken as exc:
+        sys.exit(str(exc))
     except KeyboardInterrupt:
         sys.exit("\nInterrompido. As respostas já feitas estão no cache: rode o mesmo comando para retomar.")
 

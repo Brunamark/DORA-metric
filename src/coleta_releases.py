@@ -44,6 +44,7 @@ from metricas import (
 from selecao_repos import (
     CACHE_PADRAO,
     DADOS_PADRAO,
+    ErroDeToken,
     GitHubClient,
     ler_repos,
     ler_token,
@@ -345,6 +346,8 @@ def main() -> None:
     client = GitHubClient(ler_token(), args.cache)
     try:
         executar(client, ini, fim, ler_repos(args.repos), Path(args.saida))
+    except ErroDeToken as exc:
+        sys.exit(str(exc))
     except KeyboardInterrupt:
         sys.exit("\nInterrompido. As respostas já feitas estão no cache: rode o mesmo comando para retomar.")
 

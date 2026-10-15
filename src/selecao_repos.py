@@ -45,6 +45,8 @@ DIR_SRC = Path(__file__).resolve().parent
 DADOS_PADRAO = DIR_SRC / "data"
 CACHE_PADRAO = DIR_SRC / ".cache" / "github"
 MAX_RETRIES = 5
+# Respostas que dependem do token (e não do dado pedido): nunca são reaproveitadas do cache
+STATUS_NAO_CACHEAVEIS = frozenset({401})
 CONCLUSOES_VALIDAS = ("success", "failure", "timed_out", "startup_failure")
 FAIXAS_PADRAO = [
     "1000..2000",
@@ -54,6 +56,10 @@ FAIXAS_PADRAO = [
     "25000..60000",
     ">60000",
 ]
+
+
+class ErroDeToken(RuntimeError):
+    """A API recusou o token (HTTP 401): não adianta continuar nem salvar a resposta."""
 
 
 # --------------------------------------------------------------------------
@@ -109,8 +115,8 @@ class GitHubClient:
         chave do cache: trocar a versão força uma nova consulta quando o `enxugar` muda."""
         url = path if path.startswith("http") else API + path
         arq = self._arquivo_cache(url, params, versao_cache)
-        if arq.exists():
-            d = json.loads(arq.read_text(encoding="utf-8"))
+        d = self._ler_cache(arq)
+        if d is not None:
             self.cache_hits += 1
             return d["status"], d["body"], d["link"]
 
@@ -127,6 +133,11 @@ class GitHubClient:
 
             self.chamadas += 1
 
+            if resp.status_code == 401:
+                raise ErroDeToken(
+                    "HTTP 401 (Bad credentials): o GITHUB_TOKEN é inválido ou expirou. "
+                    "Exporte um token válido e rode o mesmo comando: o que já foi coletado está no cache."
+                )
             if self._limitado(resp):
                 self._esperar_reset(resp)
                 continue
@@ -141,15 +152,36 @@ class GitHubClient:
             if resp.headers.get("X-RateLimit-Remaining") == "0":
                 self._esperar_reset(resp)
 
-            corpo = resp.json() if resp.content else None
+            try:
+                corpo = resp.json() if resp.content else None
+            except ValueError:  # corpo que não é JSON (ex.: página de erro em HTML)
+                corpo = {"message": resp.text[:500]}
             if enxugar and resp.status_code == 200 and corpo is not None:
                 corpo = enxugar(corpo)
             link = resp.headers.get("Link")
-            arq.write_text(
-                json.dumps({"status": resp.status_code, "body": corpo, "link": link}),
-                encoding="utf-8",
-            )
+            self._gravar_cache(arq, {"status": resp.status_code, "body": corpo, "link": link})
             return resp.status_code, corpo, link
+
+    @staticmethod
+    def _ler_cache(arq: Path) -> dict | None:
+        """Resposta salva, ou None se não houver, se estiver corrompida (gravação interrompida)
+        ou se for de um status que não deve ser reaproveitado (ex.: 401 de um token inválido)."""
+        try:
+            d = json.loads(arq.read_text(encoding="utf-8"))
+        except FileNotFoundError:
+            return None
+        except (ValueError, OSError):
+            return None
+        if d.get("status") in STATUS_NAO_CACHEAVEIS:
+            return None
+        return d
+
+    @staticmethod
+    def _gravar_cache(arq: Path, dados: dict) -> None:
+        """Grava num arquivo temporário e renomeia: um Ctrl+C no meio não deixa JSON pela metade."""
+        tmp = arq.with_suffix(".tmp")
+        tmp.write_text(json.dumps(dados), encoding="utf-8")
+        os.replace(tmp, arq)
 
     @staticmethod
     def _backoff(tentativa: int) -> None:
@@ -459,6 +491,8 @@ def main() -> None:
     try:
         executar(client, ini, fim, Path(args.saida), args.alvo, args.min_releases,
                  args.min_runs, args.seed, args.faixas)
+    except ErroDeToken as exc:
+        sys.exit(str(exc))
     except KeyboardInterrupt:
         sys.exit("\nInterrompido. As respostas já feitas estão no cache: rode o mesmo comando para retomar.")
 
