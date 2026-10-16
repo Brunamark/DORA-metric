@@ -39,6 +39,7 @@ from pathlib import Path
 import requests
 
 API = "https://api.github.com"
+API_GRAPHQL = API + "/graphql"
 
 # Caminhos padrão relativos a src/, para o resultado não depender da pasta de onde se roda
 DIR_SRC = Path(__file__).resolve().parent
@@ -161,6 +162,70 @@ class GitHubClient:
             link = resp.headers.get("Link")
             self._gravar_cache(arq, {"status": resp.status_code, "body": corpo, "link": link})
             return resp.status_code, corpo, link
+
+    def graphql(self, query: str, variables: dict | None = None, versao_cache: str | None = None):
+        """Consulta a API GraphQL. Retorna (status, corpo_json). Usa o mesmo cache em disco,
+        rate limit e backoff do get(). Na GraphQL, erros chegam com HTTP 200 e o campo
+        `errors`: RATE_LIMITED espera o reset e repete; uma resposta com erros só vai para o
+        cache se todos forem NOT_FOUND (determinísticos, ex.: um sha que não existe)."""
+        payload = {"query": query, "variables": variables or {}}
+        arq = self._arquivo_cache(API_GRAPHQL, payload, versao_cache)
+        d = self._ler_cache(arq)
+        if d is not None:
+            self.cache_hits += 1
+            return d["status"], d["body"]
+
+        tentativa = 0
+        while True:
+            try:
+                resp = self.session.post(API_GRAPHQL, json=payload, timeout=60)
+            except requests.RequestException as exc:
+                if tentativa >= MAX_RETRIES:
+                    raise RuntimeError(f"Falha de rede em {API_GRAPHQL}: {exc}") from exc
+                self._backoff(tentativa)
+                tentativa += 1
+                continue
+
+            self.chamadas += 1
+
+            if resp.status_code == 401:
+                raise ErroDeToken(
+                    "HTTP 401 (Bad credentials): o GITHUB_TOKEN é inválido ou expirou. "
+                    "Exporte um token válido e rode o mesmo comando: o que já foi coletado está no cache."
+                )
+            if self._limitado(resp):
+                self._esperar_reset(resp)
+                continue
+            if resp.status_code >= 500:
+                if tentativa >= MAX_RETRIES:
+                    raise RuntimeError(f"HTTP {resp.status_code} persistente em {API_GRAPHQL}")
+                self._backoff(tentativa)
+                tentativa += 1
+                continue
+
+            try:
+                corpo = resp.json() if resp.content else None
+            except ValueError:  # corpo que não é JSON (ex.: página de erro em HTML)
+                corpo = {"message": resp.text[:500]}
+            tipos_erro = self._tipos_de_erro_graphql(corpo)
+            if "RATE_LIMITED" in tipos_erro:
+                self._esperar_reset(resp)
+                continue
+
+            # Pausa proativa: acabou a cota desta janela, espera antes da próxima chamada
+            if resp.headers.get("X-RateLimit-Remaining") == "0":
+                self._esperar_reset(resp)
+
+            if tipos_erro <= {"NOT_FOUND"}:
+                self._gravar_cache(arq, {"status": resp.status_code, "body": corpo, "link": None})
+            return resp.status_code, corpo
+
+    @staticmethod
+    def _tipos_de_erro_graphql(corpo) -> set[str]:
+        """Tipos dos erros de uma resposta GraphQL (vazio se não houver o campo errors)."""
+        if not isinstance(corpo, dict):
+            return set()
+        return {e.get("type") or "SEM_TIPO" for e in corpo.get("errors") or []}
 
     @staticmethod
     def _ler_cache(arq: Path) -> dict | None:

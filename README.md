@@ -6,6 +6,7 @@ Pipeline de coleta para o Lab03. Um único comando executa as três etapas da Sp
 |---|---|---|---|
 | `selecao` | `src/selecao_repos.py` | A, #1 | Seleção de repositórios, funil de seleção e metadados |
 | `releases` | `src/coleta_releases.py` | B, #2 | Releases, tags, commits entre releases e lead time |
+| `variantes` | `src/variantes.py` | #8 (Sprint 2) | Variantes da RQ 07: lead time com release + pré-release (C2) e data das tags (C3) |
 | `runs` | `src/coleta_runs.py` | C, #3 | Workflow runs (divididos por mês), CFR (a) e tempo de recuperação |
 | `corretivas` | `src/corretivas.py` | #10 (Sprint 2) | Releases corretivas e CFR (b). **Fora do comando padrão** até a amostra-ouro ser rotulada (ver abaixo) |
 
@@ -47,10 +48,10 @@ $env:GITHUB_TOKEN="ghp_seu_token"      # Windows (PowerShell)
 python src/pipeline.py --inicio 2025-10-01 --fim 2026-10-01
 ```
 
-O comando roda `selecao` → `releases` → `runs`. Para rodar só parte do pipeline (por exemplo, quando a seleção já está pronta), use `--etapas`:
+O comando roda `selecao` → `releases` → `variantes` → `runs`. Para rodar só parte do pipeline (por exemplo, quando a seleção já está pronta), use `--etapas`:
 
 ```bash
-python src/pipeline.py --inicio 2025-10-01 --fim 2026-10-01 --etapas releases runs
+python src/pipeline.py --inicio 2025-10-01 --fim 2026-10-01 --etapas releases variantes runs
 ```
 
 Teste rápido antes da coleta completa (grava numa pasta separada para não sobrescrever os CSVs da amostra):
@@ -59,7 +60,7 @@ Teste rápido antes da coleta completa (grava numa pasta separada para não sobr
 python src/pipeline.py --inicio 2025-10-01 --fim 2026-10-01 --alvo 5 --saida teste_rapido
 ```
 
-Cada etapa também pode ser executada sozinha (`python src/selecao_repos.py ...`, `python src/coleta_releases.py ...`, `python src/coleta_runs.py ...`), com os mesmos parâmetros de janela. Os caminhos padrão são relativos a `src/`, então o resultado é o mesmo de qualquer pasta de onde o comando for executado.
+Cada etapa também pode ser executada sozinha (`python src/selecao_repos.py ...`, `python src/coleta_releases.py ...`, `python src/variantes.py ...`, `python src/coleta_runs.py ...`), com os mesmos parâmetros de janela. Os caminhos padrão são relativos a `src/`, então o resultado é o mesmo de qualquer pasta de onde o comando for executado.
 
 **Tempo e cota.** A seleção já está no cache versionado e roda em segundos, sem chamadas à API. As etapas `releases` e `runs` fazem milhares de chamadas e devem atingir o rate limit (5.000 requisições por hora) algumas vezes. O script espera sozinho; se precisar parar, use `Ctrl+C` e rode o mesmo comando depois.
 
@@ -69,7 +70,7 @@ Cada etapa também pode ser executada sozinha (`python src/selecao_repos.py ...`
 |---|---|---|
 | `--inicio` | (obrigatório) | Início da janela, `AAAA-MM-DD` |
 | `--fim` | (obrigatório) | Fim da janela, `AAAA-MM-DD` |
-| `--etapas` | `selecao releases runs` | Etapas a executar (sempre na ordem do pipeline). `corretivas` só roda quando pedida |
+| `--etapas` | `selecao releases variantes runs` | Etapas a executar (sempre na ordem do pipeline). `corretivas` só roda quando pedida |
 | `--alvo` | `100` | Nº de repositórios da amostra |
 | `--min-releases` | `5` | Mínimo de releases publicadas na janela |
 | `--min-runs` | `50` | Mínimo de workflow runs válidos (push, default branch) |
@@ -204,6 +205,64 @@ Etapa `releases` do pipeline. Sozinha: `python src/coleta_releases.py --inicio 2
 | `commits_lead_time_negativo` | inteiro | commits com `commit.author.date` posterior à release (dado inconsistente, mantido no cálculo) |
 | `lead_time_release_mediana_dias` | decimal | **dias**, mediana de `lead_time_release_dias`, variante (a) |
 | `lead_time_commit_mediana_dias` | decimal | **dias**, mediana de `lead_time_dias` de todos os commits, variante (b) |
+
+## Variantes da RQ 07: release + pré-release (C2) e data das tags (C3) (issue #8, Sprint 2)
+
+Etapa `variantes` do pipeline, logo depois de `releases`. Sozinha: `python src/variantes.py --inicio 2025-10-01 --fim 2026-10-01`. Não altera nenhuma saída da etapa `releases` além da coluna `commit_date` do `tags.csv`; por isso precisa rodar **depois** dela (o pipeline garante a ordem; se a etapa `releases` for rodada de novo sozinha, rode `variantes` em seguida).
+
+- **C2 (release + pré-release):** mesma regra do lead time da definição principal, mas a unidade de deploy inclui as pré-releases. Entre todas as releases não draft (publicadas e pré-releases), ordenadas por `published_at`, cada uma tem como anterior a imediatamente anterior; a primeira da história é ignorada. Os commits vêm de `/compare/{anterior}...{release}` e o lead time tem as mesmas variantes (a) e (b), em **dias**. A listagem de releases e os pares iguais aos da definição principal saem do cache da etapa `releases`; só os pares com pré-releases geram chamadas novas.
+- **Data das tags (C3):** a data de uma tag é a data do commit para o qual ela aponta (`committedDate`). O `tags.csv` da etapa `releases` já traz o sha desse commit; a etapa consulta a data pela **API GraphQL**, 100 shas por chamada (tags no mesmo commit geram uma consulta só), e regrava o `tags.csv` com a coluna `commit_date`. A GraphQL usa o mesmo cache, a mesma retomada e o mesmo tratamento de rate limit e de erros 5xx da API REST, com cota própria (5.000 pontos por hora).
+
+| Arquivo | Conteúdo |
+|---|---|
+| `releases_c2.csv` | Releases não draft publicadas na janela, com o par da C2, o `status` (`ok`, `sem_commits`, `tag_404`, `erro_http_<código>`, `primeira_release`) e o lead time (a) |
+| `tags.csv` | O mesmo da etapa `releases`, com a coluna `commit_date` |
+| `variantes_repos.csv` | Resumo por repositório: medianas da C2 e contagem de tags sem data |
+
+### Dicionário de dados
+
+`releases_c2.csv`: uma linha por release não draft (publicada ou pré-release) com `published_at` dentro da janela.
+
+| Coluna | Tipo | Unidade / origem |
+|---|---|---|
+| `full_name` | texto | `owner/repo` |
+| `tag_name` | texto | `tag_name` da release |
+| `prerelease` | booleano | campo `prerelease` da release |
+| `published_at` | data/hora ISO | `published_at` da release |
+| `tag_anterior` | texto | tag da release não draft imediatamente anterior (base do `compare`) |
+| `status` | texto | resultado no cálculo de lead time (valores na tabela acima) |
+| `n_commits` | inteiro | commits entregues pela release (`compare/{tag_anterior}...{tag_name}`) |
+| `total_commits_api` | inteiro | `total_commits` informado pelo `compare`; diferente de `n_commits` indica comparação incompleta |
+| `lead_time_release_dias` | decimal | **dias**, `published_at − min(commit.author.date)`, variante (a) da C2 |
+
+`tags.csv`: uma linha por tag.
+
+| Coluna | Tipo | Unidade / origem |
+|---|---|---|
+| `full_name` | texto | `owner/repo` |
+| `tag_name` | texto | `name` da tag (REST `/tags`) |
+| `sha` | texto | `commit.sha` apontado pela tag (REST `/tags`) |
+| `commit_date` | data/hora ISO | `committedDate` do commit apontado (GraphQL `object(oid:)`); vazio se o sha não existe mais ou não é um commit |
+
+`variantes_repos.csv`: uma linha por repositório.
+
+| Coluna | Tipo | Unidade / origem |
+|---|---|---|
+| `full_name` | texto | `owner/repo` |
+| `status_releases_c2` | texto | `ok` ou `erro_http_<código>` ao listar as releases |
+| `releases_na_janela_c2` | inteiro | releases não draft (publicadas e pré-releases) dentro da janela |
+| `releases_calculadas_c2` | inteiro | releases da janela com lead time calculado (`status = ok`) |
+| `releases_sem_commits_c2` | inteiro | releases da janela sem commits novos |
+| `releases_404_c2` | inteiro | releases puladas porque o `compare` retornou 404 |
+| `releases_erro_c2` | inteiro | releases puladas por outro erro HTTP no `compare` |
+| `releases_commits_incompletos_c2` | inteiro | releases em que `n_commits` ≠ `total_commits_api` |
+| `commits_c2` | inteiro | commits entregues pelas releases calculadas |
+| `commits_lead_time_negativo_c2` | inteiro | commits com `commit.author.date` posterior à release (dado inconsistente, mantido no cálculo) |
+| `lead_time_release_mediana_dias_c2` | decimal | **dias**, mediana de `lead_time_release_dias` da C2, variante (a) |
+| `lead_time_commit_mediana_dias_c2` | decimal | **dias**, mediana do lead time de todos os commits da C2, variante (b) |
+| `status_tags_datas` | texto | `ok`, `erro_http_<código>` ou `erro_graphql_<tipo>` ao consultar as datas |
+| `tags` | inteiro | tags do repositório em `tags.csv` |
+| `tags_sem_data` | inteiro | tags com `commit_date` vazio |
 
 ## Workflow runs, CFR (a) e tempo de recuperação (Card C, issue #3)
 

@@ -5,6 +5,8 @@ Lab03 - pipeline completo de coleta, com um único comando.
 Etapas, nesta ordem (todas usam a mesma janela e o mesmo cache):
   selecao   seleção de repositórios, funil e metadados        (selecao_repos.py, Card A)
   releases  releases, tags, commits entre releases, lead time (coleta_releases.py, Card B)
+  variantes lead time com release + pré-release (C2) e data das tags (C3) da RQ 07
+                                                              (variantes.py, issue #8)
   runs      workflow runs, CFR (a) e tempo de recuperação     (coleta_runs.py, Card C)
   corretivas releases corretivas e CFR (b)                    (corretivas.py, issue #10)
             -> fora do padrão: só roda com --etapas corretivas (rotulagem cega da amostra-ouro)
@@ -26,6 +28,7 @@ import coleta_releases
 import coleta_runs
 import corretivas
 import selecao_repos
+import variantes
 from selecao_repos import (
     CACHE_PADRAO,
     DADOS_PADRAO,
@@ -37,10 +40,10 @@ from selecao_repos import (
     parse_janela,
 )
 
-ETAPAS = ("selecao", "releases", "runs", "corretivas")
+ETAPAS = ("selecao", "releases", "variantes", "runs", "corretivas")
 # "corretivas" fica fora do padrão até a amostra-ouro ser rotulada (issue #10): quem rotula
 # não pode ver a saída da heurística antes de commitar os próprios rótulos.
-ETAPAS_PADRAO = ("selecao", "releases", "runs")
+ETAPAS_PADRAO = ("selecao", "releases", "variantes", "runs")
 
 
 def main(argv=None) -> None:
@@ -49,7 +52,7 @@ def main(argv=None) -> None:
     ap.add_argument("--fim", required=True, help="fim da janela (AAAA-MM-DD)")
     ap.add_argument("--etapas", nargs="+", choices=ETAPAS, default=list(ETAPAS_PADRAO),
                     help="etapas a executar, sempre na ordem do pipeline "
-                         "(padrão: selecao releases runs; corretivas só quando pedida)")
+                         "(padrão: selecao releases variantes runs; corretivas só quando pedida)")
     ap.add_argument("--alvo", type=int, default=100, help="nº de repositórios da amostra")
     ap.add_argument("--min-releases", type=int, default=5)
     ap.add_argument("--min-runs", type=int, default=50)
@@ -76,6 +79,8 @@ def main(argv=None) -> None:
                 repos = ler_repos(saida / "repos_selecionados.csv")
                 if etapa == "releases":
                     coleta_releases.executar(client, ini, fim, repos, saida)
+                elif etapa == "variantes":
+                    variantes.executar(client, ini, fim, repos, saida)
                 elif etapa == "runs":
                     coleta_runs.executar(client, ini, fim, repos, saida)
                 else:
