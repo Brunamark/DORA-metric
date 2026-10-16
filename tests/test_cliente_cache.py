@@ -48,9 +48,18 @@ class RespostaFalsa:
 
 
 def cliente_com_respostas(tmp_path, *respostas):
+    """Cliente cuja sessão devolve as respostas na ordem; uma exceção na fila é lançada
+    (simula Ctrl+C ou queda de rede)."""
     client = GitHubClient("token-de-teste", tmp_path)
     fila = list(respostas)
-    client.session.get = lambda *a, **kw: fila.pop(0)
+
+    def responder(*a, **kw):
+        item = fila.pop(0)
+        if isinstance(item, BaseException):
+            raise item
+        return item
+
+    client.session.get = responder
     return client
 
 
@@ -101,3 +110,125 @@ def test_resposta_que_nao_e_json_vira_mensagem(tmp_path):
 
     assert status == 404
     assert corpo == {"message": "<html>Not Found</html>"}
+
+
+# --------------------------------------------------------------------------
+# Retomada depois de Ctrl+C, rate limit e backoff exponencial
+# --------------------------------------------------------------------------
+import requests  # noqa: E402
+
+AGORA = 1_000_000
+
+
+@pytest.fixture
+def esperas(monkeypatch):
+    """Relógio parado em AGORA e time.sleep sem dormir: devolve a lista de esperas pedidas."""
+    pedidas = []
+    monkeypatch.setattr("selecao_repos.time.time", lambda: AGORA)
+    monkeypatch.setattr("selecao_repos.time.sleep", pedidas.append)
+    return pedidas
+
+
+def sem_cota(status=403, reset=AGORA + 100):
+    return RespostaFalsa(
+        status,
+        {"message": "API rate limit exceeded"},
+        headers={"X-RateLimit-Remaining": "0", "X-RateLimit-Reset": str(reset)},
+    )
+
+
+def test_ctrl_c_e_retomada_nao_repetem_chamadas_ja_feitas(tmp_path):
+    primeira = cliente_com_respostas(tmp_path, RespostaFalsa(200, ["mes 1"]), KeyboardInterrupt())
+    primeira.get("/repos/org/projeto/actions/runs", {"page": 1})
+    with pytest.raises(KeyboardInterrupt):
+        primeira.get("/repos/org/projeto/actions/runs", {"page": 2})
+
+    retomada = cliente_com_respostas(tmp_path, RespostaFalsa(200, ["mes 2"]))
+    pagina_1 = retomada.get("/repos/org/projeto/actions/runs", {"page": 1})
+    pagina_2 = retomada.get("/repos/org/projeto/actions/runs", {"page": 2})
+
+    assert (pagina_1[1], pagina_2[1]) == (["mes 1"], ["mes 2"])
+    assert (retomada.chamadas, retomada.cache_hits) == (1, 1)
+
+
+def test_cota_esgotada_pausa_ate_o_reset_e_repete(tmp_path, esperas):
+    client = cliente_com_respostas(tmp_path, sem_cota(), RespostaFalsa(200, [1]))
+
+    assert client.get("/repos/org/projeto/tags") == (200, [1], None)
+    assert esperas == [102]          # até o X-RateLimit-Reset, com 2 s de folga
+    assert client.chamadas == 2
+
+
+def test_cota_esgotada_com_429_tambem_pausa(tmp_path, esperas):
+    client = cliente_com_respostas(tmp_path, sem_cota(status=429, reset=AGORA + 10), RespostaFalsa(200, [1]))
+
+    client.get("/repos/org/projeto/tags")
+
+    assert esperas == [12]
+
+
+def test_rate_limit_secundario_respeita_retry_after(tmp_path, esperas):
+    limitado = RespostaFalsa(403, {"message": "secondary rate limit"}, headers={"Retry-After": "30"})
+    client = cliente_com_respostas(tmp_path, limitado, RespostaFalsa(200, [1]))
+
+    client.get("/repos/org/projeto/tags")
+
+    assert esperas == [31]
+
+
+def test_resposta_com_a_ultima_cota_pausa_antes_da_proxima_chamada(tmp_path, esperas):
+    ultima = RespostaFalsa(200, [1], headers={"X-RateLimit-Remaining": "0", "X-RateLimit-Reset": str(AGORA + 50)})
+    client = cliente_com_respostas(tmp_path, ultima)
+
+    assert client.get("/repos/org/projeto/tags") == (200, [1], None)
+    assert esperas == [52]
+    assert len(list(tmp_path.glob("*.json"))) == 1
+
+
+def test_resposta_de_rate_limit_nao_vai_para_o_cache(tmp_path, esperas):
+    client = cliente_com_respostas(tmp_path, sem_cota(), RespostaFalsa(200, [1]))
+
+    client.get("/repos/org/projeto/tags")
+
+    salvo = json.loads(client._arquivo_cache(API + "/repos/org/projeto/tags", None).read_text(encoding="utf-8"))
+    assert salvo["status"] == 200
+
+
+def test_erro_5xx_persistente_faz_backoff_exponencial_e_desiste(tmp_path, esperas):
+    client = cliente_com_respostas(tmp_path, *[RespostaFalsa(502, {"message": "Bad Gateway"})] * 6)
+
+    with pytest.raises(RuntimeError, match="HTTP 502"):
+        client.get("/repos/org/projeto/tags")
+
+    assert esperas == [1, 2, 4, 8, 16]
+    assert client.chamadas == 6
+    assert list(tmp_path.glob("*.json")) == []
+
+
+def test_erro_5xx_temporario_e_repetido_e_so_o_sucesso_vai_para_o_cache(tmp_path, esperas):
+    client = cliente_com_respostas(
+        tmp_path, RespostaFalsa(503, {"message": "Unavailable"}), RespostaFalsa(500, None, texto=""),
+        RespostaFalsa(200, [1]),
+    )
+
+    assert client.get("/repos/org/projeto/tags") == (200, [1], None)
+    assert esperas == [1, 2]
+    salvo = json.loads(client._arquivo_cache(API + "/repos/org/projeto/tags", None).read_text(encoding="utf-8"))
+    assert salvo["status"] == 200
+
+
+def test_queda_de_rede_tambem_faz_backoff(tmp_path, esperas):
+    client = cliente_com_respostas(tmp_path, requests.ConnectionError("sem rede"), RespostaFalsa(200, [1]))
+
+    assert client.get("/repos/org/projeto/tags") == (200, [1], None)
+    assert esperas == [1]
+
+
+def test_erro_4xx_definitivo_nao_e_repetido_e_fica_no_cache(tmp_path, esperas):
+    client = cliente_com_respostas(tmp_path, RespostaFalsa(404, {"message": "Not Found"}))
+
+    client.get("/repos/org/projeto/compare/v1...v2")
+    client.get("/repos/org/projeto/compare/v1...v2")
+
+    assert esperas == []
+    assert (client.chamadas, client.cache_hits) == (1, 1)

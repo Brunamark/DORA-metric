@@ -179,6 +179,11 @@ def _consultar_fatia(client, fn, branch, inicio, fim, registro) -> tuple[int, li
     if total >= TETO_RESULTADOS:
         metades = dividir_fatia(inicio, fim)
         if metades:
+            print(
+                f"  aviso: {fn} created={created} atingiu o teto de {TETO_RESULTADOS} runs "
+                f"(total_count={total}); dividindo a fatia ao meio",
+                flush=True,
+            )
             linha["dividida"] = True
             runs, recusada = [], False
             for a, b in metades:
@@ -193,6 +198,11 @@ def _consultar_fatia(client, fn, branch, inicio, fim, registro) -> tuple[int, li
                 return 200, runs
             linha["dividida"] = False
         linha["no_teto"] = True   # não dá para dividir mais: a fatia fica incompleta
+        print(
+            f"  aviso: {fn} created={created} continua no teto (total_count={total}) e não pode "
+            f"ser dividida; só os {TETO_RESULTADOS} primeiros runs serão coletados",
+            flush=True,
+        )
 
     st, _, runs = _paginas_da_fatia(client, fn, branch, created)
     if st != 200:

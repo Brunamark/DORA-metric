@@ -115,6 +115,34 @@ def test_mes_que_atinge_o_teto_e_dividido_ate_caber(janela):
     assert not any(f["no_teto"] for f in fatias)
 
 
+def test_mes_que_atinge_o_teto_gera_aviso_no_terminal(janela, capsys):
+    base = runs_em_sequencia(1500, utc(2026, 3, 1), timedelta(minutes=25))
+
+    coletar_runs(ClienteRunsFalso(base), REPO, "main", *janela)
+
+    avisos = [linha for linha in capsys.readouterr().out.splitlines() if "aviso:" in linha]
+    assert len(avisos) == 1
+    assert "created=2026-03-01..2026-03-31" in avisos[0]
+    assert "total_count=1500" in avisos[0]
+
+
+def test_mes_abaixo_do_teto_nao_gera_aviso(janela, capsys):
+    base = runs_em_sequencia(999, utc(2026, 3, 1), timedelta(minutes=40))
+
+    coletar_runs(ClienteRunsFalso(base), REPO, "main", *janela)
+
+    assert "aviso:" not in capsys.readouterr().out
+
+
+def test_fatia_que_nao_da_para_dividir_avisa_que_fica_incompleta(capsys):
+    base = runs_em_sequencia(1200, utc(2026, 3, 1, 10), timedelta(seconds=1))
+
+    processar_repo(ClienteRunsFalso(base), REPO, "main", utc(2026, 3, 1, 10), utc(2026, 3, 1, 10, 20))
+
+    saida = capsys.readouterr().out
+    assert "continua no teto (total_count=1200)" in saida
+
+
 def test_fatia_que_nao_da_para_dividir_fica_marcada_no_teto():
     # 1.200 runs em 20 minutos: a fatia é menor que 1 h, não divide mais e a API só mostra 1.000
     base = runs_em_sequencia(1200, utc(2026, 3, 1, 10), timedelta(seconds=1))
