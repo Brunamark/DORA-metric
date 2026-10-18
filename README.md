@@ -1,6 +1,6 @@
 # Lab03 · Mineração de métricas DORA
 
-Pipeline de coleta para o Lab03. Um único comando executa as três etapas da Sprint 1:
+Pipeline de coleta para o Lab03. Um único comando seleciona a amostra, coleta os dados de todas as métricas e gera o dataset consolidado:
 
 | Etapa | Script | Card / issue | O que faz |
 |---|---|---|---|
@@ -9,8 +9,9 @@ Pipeline de coleta para o Lab03. Um único comando executa as três etapas da Sp
 | `variantes` | `src/variantes.py` | #8 (Sprint 2) | Variantes da RQ 07: lead time com release + pré-release (C2) e data das tags (C3) |
 | `runs` | `src/coleta_runs.py` | C, #3 | Workflow runs (divididos por mês), CFR (a) e tempo de recuperação |
 | `corretivas` | `src/corretivas.py` | #10 (Sprint 2) | Releases corretivas e CFR (b). **Fora do comando padrão** até a amostra-ouro ser rotulada (ver abaixo) |
+| `consolidar` | `src/consolidar.py` | #8 (Sprint 2) | `dataset.csv`: uma linha por repositório, com todas as variantes das métricas. Não chama a API |
 
-As etapas usam a mesma janela, o mesmo cache e gravam os CSVs em `src/data/`.
+As etapas usam a mesma janela, o mesmo cache e gravam os CSVs em `src/data/`. Todas as colunas de todos os CSVs estão no [dicionário de dados](docs/dicionario_dados.md).
 
 ## Requisitos
 
@@ -48,7 +49,7 @@ $env:GITHUB_TOKEN="ghp_seu_token"      # Windows (PowerShell)
 python src/pipeline.py --inicio 2025-10-01 --fim 2026-10-01
 ```
 
-O comando roda `selecao` → `releases` → `variantes` → `runs`. Para rodar só parte do pipeline (por exemplo, quando a seleção já está pronta), use `--etapas`:
+O comando roda `selecao` → `releases` → `variantes` → `runs` → `consolidar`, com a amostra final de 350 repositórios. Para rodar só parte do pipeline (por exemplo, quando a seleção já está pronta), use `--etapas`:
 
 ```bash
 python src/pipeline.py --inicio 2025-10-01 --fim 2026-10-01 --etapas releases variantes runs
@@ -62,7 +63,7 @@ python src/pipeline.py --inicio 2025-10-01 --fim 2026-10-01 --alvo 5 --saida tes
 
 Cada etapa também pode ser executada sozinha (`python src/selecao_repos.py ...`, `python src/coleta_releases.py ...`, `python src/variantes.py ...`, `python src/coleta_runs.py ...`), com os mesmos parâmetros de janela. Os caminhos padrão são relativos a `src/`, então o resultado é o mesmo de qualquer pasta de onde o comando for executado.
 
-**Tempo e cota.** A seleção já está no cache versionado e roda em segundos, sem chamadas à API. As etapas `releases` e `runs` fazem milhares de chamadas e devem atingir o rate limit (5.000 requisições por hora) algumas vezes. O script espera sozinho; se precisar parar, use `Ctrl+C` e rode o mesmo comando depois.
+**Tempo e cota.** Do zero, a coleta dos 350 repositórios faz da ordem de 70 a 90 mil requisições e leva de 30 a 40 horas numa única máquina: as etapas `releases` (por causa dos `compare`) e `runs` são as mais longas. O script espera sozinho quando a cota (5.000 requisições por hora) acaba; se precisar parar, use `Ctrl+C` e rode o mesmo comando depois. A etapa `consolidar` só lê os CSVs e roda sem token: `python src/pipeline.py --inicio 2025-10-01 --fim 2026-10-01 --etapas consolidar`.
 
 ### Parâmetros
 
@@ -70,14 +71,15 @@ Cada etapa também pode ser executada sozinha (`python src/selecao_repos.py ...`
 |---|---|---|
 | `--inicio` | (obrigatório) | Início da janela, `AAAA-MM-DD` |
 | `--fim` | (obrigatório) | Fim da janela, `AAAA-MM-DD` |
-| `--etapas` | `selecao releases variantes runs` | Etapas a executar (sempre na ordem do pipeline). `corretivas` só roda quando pedida |
-| `--alvo` | `100` | Nº de repositórios da amostra |
+| `--etapas` | `selecao releases variantes runs consolidar` | Etapas a executar (sempre na ordem do pipeline). `corretivas` só roda quando pedida |
+| `--alvo` | `350` | Nº de repositórios da amostra (a Sprint 1 usou 100, que são os 100 primeiros dos 350) |
 | `--min-releases` | `5` | Mínimo de releases publicadas na janela |
 | `--min-runs` | `50` | Mínimo de workflow runs válidos (push, default branch) |
 | `--seed` | `42` | Seed do embaralhamento (reprodutibilidade) |
 | `--faixas` | 6 faixas de 1.000 a >60.000 estrelas | Faixas de estrelas da busca (`1000..2000`, `>60000`…) |
 | `--saida` | `src/data` | Pasta dos CSVs de saída |
 | `--cache` | `src/.cache/github` | Pasta do cache de respostas da API |
+| `--incluir-cfr-b` | desligado | Etapa `consolidar`: inclui o CFR (b) de `cfr_entrega_repos.csv` no dataset (só depois da rotulagem da amostra-ouro) |
 
 ## Seleção de repositórios (Card A, issue #1)
 
@@ -116,7 +118,7 @@ Cada etapa também pode ser executada sozinha (`python src/selecao_repos.py ...`
 
 - Toda resposta da API é salva em `src/.cache/github/` (um JSON por URL + parâmetros). Das respostas grandes (`/compare` e `/actions/runs`), só os campos usados vão para o cache. Quando o formato salvo muda, a chave do cache ganha uma versão (ex.: `compare-v2-mensagem`, que inclui a mensagem dos commits) e as respostas no formato antigo deixam de ser usadas.
 - Se o script for interrompido (`Ctrl+C`, queda de rede, rate limit), **rode o mesmo comando de novo**: ele continua de onde parou, sem repetir chamadas.
-- As respostas da seleção estão versionadas, para que a seleção seja reproduzida exatamente. Respostas novas ficam só na máquina local (ver `.gitignore`).
+- As respostas da seleção da Sprint 1 (os 352 primeiros candidatos avaliados) estão versionadas. As da ampliação para 350 repositórios ficam só na máquina local, como todas as respostas novas (ver `.gitignore`): somariam mais de 500 MB. A amostra final está em `repos_selecionados.csv`, então reproduzir as métricas não exige refazer a seleção.
 - Cada resposta é gravada num arquivo temporário e renomeada no fim, então uma interrupção no meio da gravação não deixa JSON corrompido. Um arquivo ilegível é tratado como ausente e consultado de novo.
 - Para refazer a coleta do zero, apague a pasta `src/.cache/`.
 
@@ -276,7 +278,7 @@ Etapa `runs` do pipeline. Sozinha: `python src/coleta_runs.py --inicio 2025-10-0
 
 | Arquivo | Conteúdo |
 |---|---|
-| `runs.csv` | Um run por linha, com a classificação |
+| `runs.csv` | Um run por linha, com a classificação. **Não é versionado** (passa de 100 MB com a amostra final): é regerado pelo pipeline |
 | `episodios.csv` | Episódios de falha, fechados e censurados |
 | `runs_fatias.csv` | Cada consulta feita à API (mês ou pedaço), com o `total_count` |
 | `workflow_runs_repos.csv` | Resumo por repositório: CFR (a), recuperação e censura |
@@ -402,6 +404,21 @@ python src/avaliar_heuristica.py        # P/R/F1 contra validacao/consenso.csv
 | `releases_corretivas` | inteiro | releases da janela que o critério marcou como corretivas |
 | `releases_indeterminadas` | inteiro | releases da janela em que o critério ficou indeterminado (contam como não corretivas) |
 | `compares_404` / `compares_erro` / `compares_truncados` | inteiro | problemas na coleta dos commits |
+
+## Dataset consolidado (issue #8, Sprint 2)
+
+Etapa `consolidar` do pipeline, a última. Sozinha: `python src/consolidar.py --inicio 2025-10-01 --fim 2026-10-01`. Ela junta os resumos por repositório de todas as etapas em `src/data/dataset.csv`, **uma linha por repositório** de `repos_selecionados.csv`. Não faz chamadas à API, então roda sem token e pode ser repetida a qualquer momento a partir dos CSVs.
+
+- **Junção pela esquerda:** um repositório que falta numa fonte continua no dataset, com as métricas vazias, e o terminal mostra um aviso.
+- **Frequência de deploy (RQ 01)** nas três unidades de deploy da RQ 07, em releases por semana (`metricas.frequencia_deploy`): `freq_deploy_release` (releases publicadas), `freq_deploy_release_pre` (releases + pré-releases) e `freq_deploy_tag` (tags com `commit_date` na janela).
+- **Lead time** (C1 e C2), **CFR (a)**, **tempo de recuperação** e as colunas de status e de qualidade dos dados de cada etapa.
+- **CFR (b):** fica fora por padrão, porque depende da versão final da heurística, escolhida depois das rotulagens da amostra-ouro. Para incluí-lo:
+
+```bash
+python src/pipeline.py --inicio 2025-10-01 --fim 2026-10-01 --etapas corretivas consolidar --incluir-cfr-b
+```
+
+A lista completa de colunas, com tipo, unidade e fórmula, está em [`docs/dicionario_dados.md`](docs/dicionario_dados.md).
 
 ## Testes
 

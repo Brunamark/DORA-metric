@@ -16,6 +16,7 @@ from conftest import (
     link_proxima,
     release,
 )
+from selecao_repos import API, ErroHttpPersistente
 
 
 def status_por_tag(resultado):
@@ -143,6 +144,24 @@ def test_outro_erro_no_compare_pula_a_release_e_conta_separado_do_404(cliente, j
 
     assert status_por_tag(resultado)["v1.1"] == "erro_http_500"
     assert resultado["resumo"]["releases_erro"] == 1
+
+
+def test_5xx_persistente_no_compare_pula_a_release_sem_interromper_a_coleta(cliente, janela, releases_v1_0_e_v1_1):
+    api = cliente({(caminho_releases(), 1): (200, releases_v1_0_e_v1_1, None)})
+    get_original = api.get
+
+    def get(path, params=None, enxugar=None, versao_cache=None):
+        if path == caminho_compare("v1.0", "v1.1"):
+            raise ErroHttpPersistente(500, API + path)
+        return get_original(path, params, enxugar, versao_cache)
+
+    api.get = get
+
+    resultado = processar_repo(api, REPO, *janela)
+
+    assert status_por_tag(resultado)["v1.1"] == "erro_http_500"
+    assert resultado["resumo"]["releases_erro"] == 1
+    assert resultado["resumo"]["status_releases"] == "ok"
     assert resultado["resumo"]["releases_404"] == 0
 
 

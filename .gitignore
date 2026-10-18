@@ -8,5 +8,7 @@ src/.cache/
 
 # Saída grande demais para o GitHub (> 250 MB com 100 repositórios): é regerada pelo pipeline
 src/data/commits_releases.csv
+# Passa de 100 MB (limite do GitHub) com a amostra final: é regerado pelo pipeline
+src/data/runs.csv
 # Saída do teste rápido descrito no README
 teste_rapido/

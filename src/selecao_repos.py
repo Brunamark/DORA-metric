@@ -6,7 +6,7 @@ Fluxo:
   1. Busca candidatos em /search/repositories, fatiando por faixas de estrelas
      (a busca devolve no máximo 1.000 resultados por consulta).
   2. Embaralha os candidatos com seed fixa (amostra diversa e reproduzível).
-  3. Avalia um a um, até atingir o alvo (padrão: 100):
+  3. Avalia um a um, até atingir o alvo (padrão: 350, a amostra final da Sprint 2):
        a) usa GitHub Actions?                      (/actions/workflows)
        b) >= 5 releases publicadas na janela?      (/releases)
        c) >= 50 workflow runs válidos na janela?   (/actions/runs)
@@ -45,6 +45,8 @@ API_GRAPHQL = API + "/graphql"
 DIR_SRC = Path(__file__).resolve().parent
 DADOS_PADRAO = DIR_SRC / "data"
 CACHE_PADRAO = DIR_SRC / ".cache" / "github"
+# Amostra final da Sprint 2: >= 300 após os filtros, com folga para erros de API (issue #8)
+ALVO_PADRAO = 350
 MAX_RETRIES = 5
 # Respostas que dependem do token (e não do dado pedido): nunca são reaproveitadas do cache
 STATUS_NAO_CACHEAVEIS = frozenset({401})
@@ -61,6 +63,15 @@ FAIXAS_PADRAO = [
 
 class ErroDeToken(RuntimeError):
     """A API recusou o token (HTTP 401): não adianta continuar nem salvar a resposta."""
+
+
+class ErroHttpPersistente(RuntimeError):
+    """Erro 5xx que continuou depois de todas as tentativas com backoff. A resposta não vai
+    para o cache: rodar o mesmo comando depois tenta de novo."""
+
+    def __init__(self, status: int, url: str):
+        super().__init__(f"HTTP {status} persistente em {url}")
+        self.status = status
 
 
 # --------------------------------------------------------------------------
@@ -144,7 +155,7 @@ class GitHubClient:
                 continue
             if resp.status_code >= 500:
                 if tentativa >= MAX_RETRIES:
-                    raise RuntimeError(f"HTTP {resp.status_code} persistente em {url}")
+                    raise ErroHttpPersistente(resp.status_code, url)
                 self._backoff(tentativa)
                 tentativa += 1
                 continue
@@ -487,7 +498,7 @@ def funil_markdown(funil: list[dict]) -> str:
 # --------------------------------------------------------------------------
 # Main
 # --------------------------------------------------------------------------
-def executar(client, ini: datetime, fim: datetime, saida: Path, alvo: int = 100,
+def executar(client, ini: datetime, fim: datetime, saida: Path, alvo: int = ALVO_PADRAO,
              min_releases: int = 5, min_runs: int = 50, seed: int = 42,
              faixas: list[str] = FAIXAS_PADRAO) -> list[dict]:
     """Seleção completa: busca, filtros, metadados e CSVs. Retorna os selecionados."""
@@ -542,7 +553,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(description="Lab03S01 - seleção de repositórios, funil e metadados")
     ap.add_argument("--inicio", required=True, help="início da janela (AAAA-MM-DD)")
     ap.add_argument("--fim", required=True, help="fim da janela (AAAA-MM-DD)")
-    ap.add_argument("--alvo", type=int, default=100, help="nº de repositórios da amostra")
+    ap.add_argument("--alvo", type=int, default=ALVO_PADRAO, help="nº de repositórios da amostra")
     ap.add_argument("--min-releases", type=int, default=5)
     ap.add_argument("--min-runs", type=int, default=50)
     ap.add_argument("--seed", type=int, default=42)
