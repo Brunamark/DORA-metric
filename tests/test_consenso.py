@@ -185,6 +185,15 @@ def test_ler_decisoes_com_rotulo_invalido_aponta_a_linha(tmp_path):
         ler_decisoes(tmp_path / ARQUIVO_DECISOES)
 
 
+def test_ler_decisoes_rejeita_colunas_ausentes(tmp_path):
+    pd.DataFrame([["releases_reais", "org/a"]], columns=["dimensao", "repo"]).to_csv(
+        tmp_path / ARQUIVO_DECISOES, index=False
+    )
+
+    with pytest.raises(ValueError, match="colunas ausentes.*tag.*votos"):
+        ler_decisoes(tmp_path / ARQUIVO_DECISOES)
+
+
 def test_rotulo_valido_para_outra_dimensao_e_rejeitado(tmp_path):
     escrever_decisoes(tmp_path, [["corretiva", "org/a", "v1", "x", "incerto", ""]])
 
@@ -197,6 +206,36 @@ def test_dimensao_desconhecida_na_decisao_e_erro(tmp_path):
 
     with pytest.raises(ValueError, match="inválido para 'velocidade'"):
         ler_decisoes(tmp_path / ARQUIVO_DECISOES)
+
+
+def test_decisao_de_reuniao_so_afeta_item_sem_maioria(pasta):
+    repo_empate, _ = um_item(pasta)
+    repos = ler_csv(pasta / "amostra_ouro.csv")["repo"].drop_duplicates().tolist()
+    repo_maioria = repos[1]
+    for nome, valor in zip(INTEGRANTES, ["sim", "não", "incerto"]):
+        alterar(pasta, nome, {("releases_reais", repo_empate, ""): valor})
+    decisoes = {
+        ("releases_reais", repo_empate, ""): {
+            "rotulo": "não",
+            "observacao": "decisão baseada nos commits",
+        },
+        ("releases_reais", repo_maioria, ""): {
+            "rotulo": "sim",
+            "observacao": "não deve substituir a maioria",
+        },
+    }
+
+    consenso, reuniao = construir_consenso(carregar_rotulos(pasta, INTEGRANTES), decisoes)
+
+    empate = linha(consenso, "releases_reais", repo_empate)
+    maioria = linha(consenso, "releases_reais", repo_maioria)
+    assert (empate["rotulo_consenso"], empate["decidido_em"]) == ("não", "reuniao")
+    assert (maioria["rotulo_consenso"], maioria["decidido_em"]) == (
+        rotulo_padrao("releases_reais", repo_maioria, ""),
+        "maioria",
+    )
+    assert len(reuniao) == 1
+    assert reuniao.iloc[0]["repo"] == repo_empate
 
 
 # --------------------------------------------------------------------------
