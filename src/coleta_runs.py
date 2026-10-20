@@ -20,6 +20,10 @@ Saídas em --saida:
   runs_fatias.csv          cada consulta feita à API (mês ou pedaço), com o total_count
   workflow_runs_repos.csv  resumo por repositório
 
+Os três primeiros são gravados repositório por repositório, para a memória não crescer
+com a amostra (centenas de milhares de runs): as linhas vão para <arquivo>.parcial e só
+substituem o CSV final no fim. Uma interrupção deixa os CSVs da execução anterior intactos.
+
 Usa o mesmo cliente com cache/retomada de selecao_repos.py.
 
 Uso (de dentro de src/):
@@ -27,7 +31,10 @@ Uso (de dentro de src/):
 """
 
 import argparse
+import csv
+import os
 import sys
+from contextlib import ExitStack
 from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
 
@@ -68,6 +75,13 @@ CAMPOS_EPISODIOS = [
     "n_falhas", "censurado", "duracao_horas",
 ]
 CAMPOS_FATIAS = ["full_name", "inicio", "fim", "total_count", "dividida", "no_teto", "status"]
+# CSVs de detalhe, gravados aos poucos: chave do resultado de processar_repo -> (arquivo, colunas)
+ARQUIVOS_DETALHE = {
+    "runs": ("runs.csv", CAMPOS_RUNS),
+    "episodios": ("episodios.csv", CAMPOS_EPISODIOS),
+    "fatias": ("runs_fatias.csv", CAMPOS_FATIAS),
+}
+SUFIXO_PARCIAL = ".parcial"
 CAMPOS_RESUMO = [
     "full_name", "default_branch", "status_runs",
     "fatias_consultadas", "fatias_divididas", "fatias_no_teto",
@@ -318,30 +332,40 @@ def processar_repo(client, fn: str, branch: str, ini: datetime, fim: datetime) -
 # Etapa do pipeline
 # --------------------------------------------------------------------------
 def executar(client, ini: datetime, fim: datetime, repos: list[dict], saida: Path) -> list[dict]:
-    """Coleta os runs de todos os repositórios e grava os CSVs. Retorna os resumos."""
+    """Coleta os runs de todos os repositórios e grava os CSVs. Retorna os resumos.
+    Runs, episódios e fatias são gravados a cada repositório (só os resumos ficam em memória)."""
     saida.mkdir(parents=True, exist_ok=True)
-    todos_runs, todos_episodios, todas_fatias, resumos = [], [], [], []
-    for i, repo in enumerate(repos, 1):
-        fn, branch = repo["full_name"], repo["default_branch"]
-        resultado = processar_repo(client, fn, branch, ini, fim)
-        todos_runs.extend(resultado["runs"])
-        todos_episodios.extend(resultado["episodios"])
-        todas_fatias.extend(resultado["fatias"])
-        r = resultado["resumo"]
-        resumos.append(r)
-        problemas = [f"status_runs={r['status_runs']}"] if r["status_runs"] != "ok" else []
-        if r["fatias_no_teto"]:
-            problemas.append(f"fatias_no_teto={r['fatias_no_teto']} (contagem incompleta)")
-        print(
-            f"[{i}/{len(repos)}] {fn} -> {r['runs_coletados']} runs, CFR(a)={r['cfr_a']}, "
-            f"{r['episodios']} episódios ({r['episodios_censurados']} censurados)"
-            + (f" | {', '.join(problemas)}" if problemas else ""),
-            flush=True,
-        )
+    resumos = []
+    with ExitStack() as arquivos:
+        abertos, escritores = [], {}
+        for chave, (nome, campos) in ARQUIVOS_DETALHE.items():
+            f = arquivos.enter_context((saida / (nome + SUFIXO_PARCIAL)).open("w", newline="", encoding="utf-8"))
+            abertos.append(f)
+            escritores[chave] = csv.DictWriter(f, fieldnames=campos)
+            escritores[chave].writeheader()
 
-    salvar_csv(saida / "runs.csv", CAMPOS_RUNS, todos_runs)
-    salvar_csv(saida / "episodios.csv", CAMPOS_EPISODIOS, todos_episodios)
-    salvar_csv(saida / "runs_fatias.csv", CAMPOS_FATIAS, todas_fatias)
+        for i, repo in enumerate(repos, 1):
+            fn, branch = repo["full_name"], repo["default_branch"]
+            resultado = processar_repo(client, fn, branch, ini, fim)
+            for chave, escritor in escritores.items():
+                escritor.writerows(resultado[chave])
+            for f in abertos:
+                f.flush()
+            r = resultado["resumo"]
+            resumos.append(r)
+            problemas = [f"status_runs={r['status_runs']}"] if r["status_runs"] != "ok" else []
+            if r["fatias_no_teto"]:
+                problemas.append(f"fatias_no_teto={r['fatias_no_teto']} (contagem incompleta)")
+            print(
+                f"[{i}/{len(repos)}] {fn} -> {r['runs_coletados']} runs, CFR(a)={r['cfr_a']}, "
+                f"{r['episodios']} episódios ({r['episodios_censurados']} censurados)"
+                + (f" | {', '.join(problemas)}" if problemas else ""),
+                flush=True,
+            )
+
+    # Todos os repositórios processados: os arquivos parciais viram os CSVs finais
+    for nome, _ in ARQUIVOS_DETALHE.values():
+        os.replace(saida / (nome + SUFIXO_PARCIAL), saida / nome)
     salvar_csv(saida / "workflow_runs_repos.csv", CAMPOS_RESUMO, resumos)
 
     print(
