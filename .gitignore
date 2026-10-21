@@ -10,5 +10,7 @@ src/.cache/
 src/data/commits_releases.csv
 # Passa de 100 MB (limite do GitHub) com a amostra final: é regerado pelo pipeline
 src/data/runs.csv
+# Arquivos temporários da etapa runs, gravados aos poucos (viram os CSVs finais no fim)
+src/data/*.parcial
 # Saída do teste rápido descrito no README
 teste_rapido/
