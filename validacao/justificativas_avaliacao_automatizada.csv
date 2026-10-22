@@ -1,0 +1,421 @@
+dimensao,repo,tag,rotulo,fonte,justificativa
+tipo_projeto,AssetRipper/AssetRipper,,aplicação/serviço,descrição e releases do repositório,Aplicação para extrair e exportar assets de jogos Unity; releases distribuem binários
+releases_reais,AssetRipper/AssetRipper,,sim,descrição e releases do repositório,Aplicação para extrair e exportar assets de jogos Unity; releases distribuem binários
+tipo_projeto,BigPizzaV3/CodexPlusPlus,,aplicação/serviço,descrição e releases do repositório,App desktop que estende o Codex; releases trazem instaladores para usuários
+releases_reais,BigPizzaV3/CodexPlusPlus,,sim,descrição e releases do repositório,App desktop que estende o Codex; releases trazem instaladores para usuários
+tipo_projeto,ClickHouse/ClickHouse,,aplicação/serviço,descrição e releases do repositório,SGBD servidor; releases publicam binários para usuários
+releases_reais,ClickHouse/ClickHouse,,sim,descrição e releases do repositório,SGBD servidor; releases publicam binários para usuários
+tipo_projeto,GrapesJS/grapesjs,,biblioteca/framework,descrição e releases do repositório,Framework de editor web publicado no npm
+releases_reais,GrapesJS/grapesjs,,sim,descrição e releases do repositório,Framework de editor web publicado no npm
+tipo_projeto,Imbad0202/academic-research-skills,,outro,descrição e releases do repositório,"Coleção de skills para agentes de IA voltada à pesquisa acadêmica, instalada por versão"
+releases_reais,Imbad0202/academic-research-skills,,sim,descrição e releases do repositório,"Coleção de skills para agentes de IA voltada à pesquisa acadêmica, instalada por versão"
+tipo_projeto,K-Dense-AI/scientific-agent-skills,,outro,descrição e releases do repositório,"Coleção de skills científicas para agentes de IA, instalada por versão"
+releases_reais,K-Dense-AI/scientific-agent-skills,,sim,descrição e releases do repositório,"Coleção de skills científicas para agentes de IA, instalada por versão"
+tipo_projeto,NervJS/taro,,biblioteca/framework,descrição e releases do repositório,"Framework multiplataforma para mini programas, publicado no npm"
+releases_reais,NervJS/taro,,sim,descrição e releases do repositório,"Framework multiplataforma para mini programas, publicado no npm"
+tipo_projeto,OthmanAdi/planning-with-files,,outro,descrição e releases do repositório,"Skill/plugin para agentes de IA (Markdown e hooks), instalado pelos usuários por versão"
+releases_reais,OthmanAdi/planning-with-files,,sim,descrição e releases do repositório,"Skill/plugin para agentes de IA (Markdown e hooks), instalado pelos usuários por versão"
+tipo_projeto,RPCS3/rpcs3,,aplicação/serviço,descrição e releases do repositório,Emulador de PS3; releases distribuem builds para usuários
+releases_reais,RPCS3/rpcs3,,sim,descrição e releases do repositório,Emulador de PS3; releases distribuem builds para usuários
+tipo_projeto,ReactiveX/RxJava,,biblioteca/framework,descrição e releases do repositório,Biblioteca de programação reativa para a JVM publicada no Maven Central
+releases_reais,ReactiveX/RxJava,,sim,descrição e releases do repositório,Biblioteca de programação reativa para a JVM publicada no Maven Central
+tipo_projeto,Start9Labs/start-technologies,,aplicação/serviço,descrição e releases do repositório,"Monorepo do StartOS (sistema para servidor pessoal), SDK, CLI e StartWRT; releases são entregas por produto"
+releases_reais,Start9Labs/start-technologies,,sim,descrição e releases do repositório,"Monorepo do StartOS (sistema para servidor pessoal), SDK, CLI e StartWRT; releases são entregas por produto"
+tipo_projeto,SwiftOldDriver/iOS-Weekly,,outro,descrição e releases do repositório,"Newsletter semanal; cada release é uma edição de artigos, não software"
+releases_reais,SwiftOldDriver/iOS-Weekly,,não,descrição e releases do repositório,"Newsletter semanal; cada release é uma edição de artigos, não software"
+tipo_projeto,Sylius/Sylius,,biblioteca/framework,descrição e releases do repositório,Framework de e-commerce em Symfony distribuído pelo Composer
+releases_reais,Sylius/Sylius,,sim,descrição e releases do repositório,Framework de e-commerce em Symfony distribuído pelo Composer
+tipo_projeto,alpinejs/alpine,,biblioteca/framework,descrição e releases do repositório,Framework JavaScript leve publicado no npm
+releases_reais,alpinejs/alpine,,sim,descrição e releases do repositório,Framework JavaScript leve publicado no npm
+tipo_projeto,alvinunreal/oh-my-opencode-slim,,outro,descrição e releases do repositório,"Plugin para o agente OpenCode (e app companion), distribuído no npm"
+releases_reais,alvinunreal/oh-my-opencode-slim,,sim,descrição e releases do repositório,"Plugin para o agente OpenCode (e app companion), distribuído no npm"
+tipo_projeto,android/compose-samples,,outro,descrição e releases do repositório,"Repositório de apps de exemplo; releases são snapshots mensais do código, sem APK desde 2026"
+releases_reais,android/compose-samples,,não,descrição e releases do repositório,"Repositório de apps de exemplo; releases são snapshots mensais do código, sem APK desde 2026"
+tipo_projeto,anomalyco/sst,,biblioteca/framework,descrição e releases do repositório,"Framework de infraestrutura como código com CLI, publicado no npm"
+releases_reais,anomalyco/sst,,sim,descrição e releases do repositório,"Framework de infraestrutura como código com CLI, publicado no npm"
+tipo_projeto,apache/fory,,biblioteca/framework,descrição e releases do repositório,Framework de serialização multilinguagem publicado em vários registros
+releases_reais,apache/fory,,sim,descrição e releases do repositório,Framework de serialização multilinguagem publicado em vários registros
+tipo_projeto,apollographql/apollo-client,,biblioteca/framework,descrição e releases do repositório,Biblioteca cliente GraphQL (monorepo de pacotes npm)
+releases_reais,apollographql/apollo-client,,sim,descrição e releases do repositório,Biblioteca cliente GraphQL (monorepo de pacotes npm)
+tipo_projeto,cloudflare/workerd,,aplicação/serviço,descrição e releases do repositório,Runtime JavaScript dos Cloudflare Workers; releases diárias publicadas no npm e usadas pelo wrangler
+releases_reais,cloudflare/workerd,,sim,descrição e releases do repositório,Runtime JavaScript dos Cloudflare Workers; releases diárias publicadas no npm e usadas pelo wrangler
+tipo_projeto,code-yeongyu/oh-my-openagent,,outro,descrição e releases do repositório,"Plugin/harness para o agente OpenCode, publicado no npm"
+releases_reais,code-yeongyu/oh-my-openagent,,sim,descrição e releases do repositório,"Plugin/harness para o agente OpenCode, publicado no npm"
+tipo_projeto,codeforreal1/compressO,,aplicação/serviço,descrição e releases do repositório,App desktop de compressão de vídeo/imagem; releases distribuem instaladores
+releases_reais,codeforreal1/compressO,,sim,descrição e releases do repositório,App desktop de compressão de vídeo/imagem; releases distribuem instaladores
+tipo_projeto,cvat-ai/cvat,,aplicação/serviço,descrição e releases do repositório,"Plataforma web de anotação de dados (servidor + UI), com imagens Docker por release"
+releases_reais,cvat-ai/cvat,,sim,descrição e releases do repositório,"Plataforma web de anotação de dados (servidor + UI), com imagens Docker por release"
+tipo_projeto,darrylmorley/whatcable,,aplicação/serviço,descrição e releases do repositório,App de macOS que diagnostica cabos USB-C; releases distribuem o app
+releases_reais,darrylmorley/whatcable,,sim,descrição e releases do repositório,App de macOS que diagnostica cabos USB-C; releases distribuem o app
+tipo_projeto,decaporg/decap-cms,,aplicação/serviço,descrição e releases do repositório,CMS baseado em Git distribuído no npm
+releases_reais,decaporg/decap-cms,,sim,descrição e releases do repositório,CMS baseado em Git distribuído no npm
+tipo_projeto,deepspeedai/DeepSpeed,,biblioteca/framework,descrição e releases do repositório,Biblioteca de otimização de treinamento distribuído publicada no PyPI
+releases_reais,deepspeedai/DeepSpeed,,sim,descrição e releases do repositório,Biblioteca de otimização de treinamento distribuído publicada no PyPI
+tipo_projeto,deer-flow/llm-space,,aplicação/serviço,descrição e releases do repositório,App desktop de workspace para LLMs; releases distribuem instaladores
+releases_reais,deer-flow/llm-space,,sim,descrição e releases do repositório,App desktop de workspace para LLMs; releases distribuem instaladores
+tipo_projeto,docling-project/docling,,biblioteca/framework,descrição e releases do repositório,Biblioteca Python de conversão de documentos publicada no PyPI
+releases_reais,docling-project/docling,,sim,descrição e releases do repositório,Biblioteca Python de conversão de documentos publicada no PyPI
+tipo_projeto,eugeniughelbur/obsidian-second-brain,,outro,descrição e releases do repositório,"Skill/plugin para agentes de IA operarem um vault do Obsidian, instalado por versão"
+releases_reais,eugeniughelbur/obsidian-second-brain,,sim,descrição e releases do repositório,"Skill/plugin para agentes de IA operarem um vault do Obsidian, instalado por versão"
+tipo_projeto,expressjs/express,,biblioteca/framework,descrição e releases do repositório,Framework web para Node.js publicado no npm
+releases_reais,expressjs/express,,sim,descrição e releases do repositório,Framework web para Node.js publicado no npm
+tipo_projeto,facebook/rocksdb,,biblioteca/framework,descrição e releases do repositório,Biblioteca de armazenamento chave-valor embarcada; releases são versões consumidas pelos usuários
+releases_reais,facebook/rocksdb,,sim,descrição e releases do repositório,Biblioteca de armazenamento chave-valor embarcada; releases são versões consumidas pelos usuários
+tipo_projeto,getzola/zola,,ferramenta CLI,descrição e releases do repositório,Gerador de sites estáticos distribuído como binário
+releases_reais,getzola/zola,,sim,descrição e releases do repositório,Gerador de sites estáticos distribuído como binário
+tipo_projeto,gitroomhq/postiz-app,,aplicação/serviço,descrição e releases do repositório,Aplicação auto-hospedável de agendamento de posts; releases distribuem imagens Docker
+releases_reais,gitroomhq/postiz-app,,sim,descrição e releases do repositório,Aplicação auto-hospedável de agendamento de posts; releases distribuem imagens Docker
+tipo_projeto,graphql/graphiql,,biblioteca/framework,descrição e releases do repositório,Monorepo de componentes da IDE GraphiQL publicados no npm
+releases_reais,graphql/graphiql,,sim,descrição e releases do repositório,Monorepo de componentes da IDE GraphiQL publicados no npm
+tipo_projeto,handy-computer/transcribe.cpp,,biblioteca/framework,descrição e releases do repositório,"Biblioteca C++ de transcrição de fala com bindings, publicada em pacotes"
+releases_reais,handy-computer/transcribe.cpp,,sim,descrição e releases do repositório,"Biblioteca C++ de transcrição de fala com bindings, publicada em pacotes"
+tipo_projeto,homarr-labs/homarr,,aplicação/serviço,descrição e releases do repositório,Dashboard auto-hospedado distribuído em imagem Docker
+releases_reais,homarr-labs/homarr,,sim,descrição e releases do repositório,Dashboard auto-hospedado distribuído em imagem Docker
+tipo_projeto,huggingface/transformers,,biblioteca/framework,descrição e releases do repositório,Biblioteca de modelos de ML publicada no PyPI
+releases_reais,huggingface/transformers,,sim,descrição e releases do repositório,Biblioteca de modelos de ML publicada no PyPI
+tipo_projeto,keycloak/keycloak,,aplicação/serviço,descrição e releases do repositório,Servidor de identidade e acesso distribuído em imagens e pacotes
+releases_reais,keycloak/keycloak,,sim,descrição e releases do repositório,Servidor de identidade e acesso distribuído em imagens e pacotes
+tipo_projeto,langchain-ai/deepagents,,biblioteca/framework,descrição e releases do repositório,Monorepo de SDK de agentes (pacotes PyPI) e CLI; cada pacote tem releases próprias
+releases_reais,langchain-ai/deepagents,,sim,descrição e releases do repositório,Monorepo de SDK de agentes (pacotes PyPI) e CLI; cada pacote tem releases próprias
+tipo_projeto,lbjlaq/Antigravity-Manager,,aplicação/serviço,descrição e releases do repositório,App desktop de gestão de contas e proxy para assistentes de IA; releases distribuem instaladores
+releases_reais,lbjlaq/Antigravity-Manager,,sim,descrição e releases do repositório,App desktop de gestão de contas e proxy para assistentes de IA; releases distribuem instaladores
+tipo_projeto,louis-e/arnis,,aplicação/serviço,descrição e releases do repositório,Aplicação desktop que gera mundos de Minecraft a partir de dados do OpenStreetMap
+releases_reais,louis-e/arnis,,sim,descrição e releases do repositório,Aplicação desktop que gera mundos de Minecraft a partir de dados do OpenStreetMap
+tipo_projeto,microsoft/winget-cli,,ferramenta CLI,descrição e releases do repositório,Gerenciador de pacotes do Windows; releases distribuem o instalador
+releases_reais,microsoft/winget-cli,,sim,descrição e releases do repositório,Gerenciador de pacotes do Windows; releases distribuem o instalador
+tipo_projeto,mihomo-party-org/clash-party,,aplicação/serviço,descrição e releases do repositório,App desktop (GUI do proxy mihomo); releases distribuem instaladores
+releases_reais,mihomo-party-org/clash-party,,sim,descrição e releases do repositório,App desktop (GUI do proxy mihomo); releases distribuem instaladores
+tipo_projeto,nanocoai/nanoclaw,,aplicação/serviço,descrição e releases do repositório,Assistente de IA auto-hospedado; releases são rollups de versão para quem atualiza
+releases_reais,nanocoai/nanoclaw,,sim,descrição e releases do repositório,Assistente de IA auto-hospedado; releases são rollups de versão para quem atualiza
+tipo_projeto,node-red/node-red,,aplicação/serviço,descrição e releases do repositório,"Runtime de programação por fluxos (servidor + editor), distribuído no npm e Docker"
+releases_reais,node-red/node-red,,sim,descrição e releases do repositório,"Runtime de programação por fluxos (servidor + editor), distribuído no npm e Docker"
+tipo_projeto,paperclipai/paperclip,,aplicação/serviço,descrição e releases do repositório,"Aplicação para orquestrar agentes de IA (servidor + UI), publicada no npm e Docker"
+releases_reais,paperclipai/paperclip,,sim,descrição e releases do repositório,"Aplicação para orquestrar agentes de IA (servidor + UI), publicada no npm e Docker"
+tipo_projeto,pgcentralfoundation/pgrx,,biblioteca/framework,descrição e releases do repositório,"Framework em Rust para extensões do PostgreSQL, publicado no crates.io"
+releases_reais,pgcentralfoundation/pgrx,,sim,descrição e releases do repositório,"Framework em Rust para extensões do PostgreSQL, publicado no crates.io"
+tipo_projeto,pmndrs/zustand,,biblioteca/framework,descrição e releases do repositório,Biblioteca de gerenciamento de estado para React publicada no npm
+releases_reais,pmndrs/zustand,,sim,descrição e releases do repositório,Biblioteca de gerenciamento de estado para React publicada no npm
+tipo_projeto,psf/black,,ferramenta CLI,descrição e releases do repositório,Formatador de código Python distribuído no PyPI
+releases_reais,psf/black,,sim,descrição e releases do repositório,Formatador de código Python distribuído no PyPI
+tipo_projeto,pydantic/monty,,biblioteca/framework,descrição e releases do repositório,"Interpretador Python em sandbox escrito em Rust, publicado no PyPI e npm"
+releases_reais,pydantic/monty,,sim,descrição e releases do repositório,"Interpretador Python em sandbox escrito em Rust, publicado no PyPI e npm"
+tipo_projeto,redpanda-data/connect,,aplicação/serviço,descrição e releases do repositório,Serviço de processamento de streams distribuído como binário e imagem
+releases_reais,redpanda-data/connect,,sim,descrição e releases do repositório,Serviço de processamento de streams distribuído como binário e imagem
+tipo_projeto,rowboatlabs/rowboat,,aplicação/serviço,descrição e releases do repositório,App de assistente de IA com interface desktop/web; releases distribuem instaladores
+releases_reais,rowboatlabs/rowboat,,sim,descrição e releases do repositório,App de assistente de IA com interface desktop/web; releases distribuem instaladores
+tipo_projeto,rust-lang/rust,,ferramenta CLI,descrição e releases do repositório,Compilador e toolchain da linguagem Rust; releases estáveis distribuídas pelo rustup
+releases_reais,rust-lang/rust,,sim,descrição e releases do repositório,Compilador e toolchain da linguagem Rust; releases estáveis distribuídas pelo rustup
+tipo_projeto,samtools/samtools,,ferramenta CLI,descrição e releases do repositório,Ferramentas de linha de comando para arquivos SAM/BAM/CRAM
+releases_reais,samtools/samtools,,sim,descrição e releases do repositório,Ferramentas de linha de comando para arquivos SAM/BAM/CRAM
+tipo_projeto,starship/starship,,ferramenta CLI,descrição e releases do repositório,Prompt de shell distribuído como binário
+releases_reais,starship/starship,,sim,descrição e releases do repositório,Prompt de shell distribuído como binário
+tipo_projeto,twigphp/Twig,,biblioteca/framework,descrição e releases do repositório,Motor de templates PHP distribuído pelo Composer
+releases_reais,twigphp/Twig,,sim,descrição e releases do repositório,Motor de templates PHP distribuído pelo Composer
+tipo_projeto,uutils/coreutils,,ferramenta CLI,descrição e releases do repositório,Reimplementação em Rust dos utilitários de linha de comando GNU
+releases_reais,uutils/coreutils,,sim,descrição e releases do repositório,Reimplementação em Rust dos utilitários de linha de comando GNU
+tipo_projeto,verl-project/verl,,biblioteca/framework,descrição e releases do repositório,Biblioteca de treinamento por RL para LLMs publicada no PyPI
+releases_reais,verl-project/verl,,sim,descrição e releases do repositório,Biblioteca de treinamento por RL para LLMs publicada no PyPI
+tipo_projeto,withcoral/coral,,aplicação/serviço,descrição e releases do repositório,"Aplicação (CLI, MCP e desktop) para consultar fontes de dados; releases distribuem binários"
+releases_reais,withcoral/coral,,sim,descrição e releases do repositório,"Aplicação (CLI, MCP e desktop) para consultar fontes de dados; releases distribuem binários"
+tipo_projeto,wled/WLED,,aplicação/serviço,descrição e releases do repositório,Firmware para controladores de LED ESP; releases distribuem binários para gravação
+releases_reais,wled/WLED,,sim,descrição e releases do repositório,Firmware para controladores de LED ESP; releases distribuem binários para gravação
+corretiva,AssetRipper/AssetRipper,1.3.5,não,notas_da_release (página do GitHub) + commits,"Notas: várias funcionalidades novas (unswizzling, filtro, Texture3D) junto com correções"
+corretiva,AssetRipper/AssetRipper,1.3.6,não,notas_da_release (página do GitHub) + commits,"Notas: funcionalidades novas (página premium, descompilação de shaders) e correções"
+corretiva,AssetRipper/AssetRipper,1.3.10,não,notas_da_release (página do GitHub) + commits,Notas: maioria atualizações de dependências; duas correções e duas melhorias
+corretiva,AssetRipper/AssetRipper,1.3.12,não,notas_da_release (página do GitHub) + commits,"Notas: seis correções, uma funcionalidade e várias melhorias; correções não chegam a 2/3"
+corretiva,AssetRipper/AssetRipper,1.3.14,não,notas_da_release (página do GitHub) + commits,"Notas: três correções, suporte a versões novas e melhorias; maioria dependências"
+corretiva,BigPizzaV3/CodexPlusPlus,v1.0.4,sim,notas_da_release (cache da coleta) + commits,Notas: 6 de 7 itens são correções de inicialização/descoberta no Windows e macOS
+corretiva,BigPizzaV3/CodexPlusPlus,v1.2.4,sim,notas_da_release (cache da coleta) + commits,"Maioria das mudanças são correções (porta no Windows, sync de provedor, bundle DMG); 1 feature"
+corretiva,BigPizzaV3/CodexPlusPlus,v1.2.8,não,notas_da_release (cache da coleta) + commits,Objetivo principal é o novo Computer Use Guard; a correção é secundária
+corretiva,BigPizzaV3/CodexPlusPlus,v1.2.16,não,notas_da_release (cache da coleta) + commits,"Duas funcionalidades novas (importação de provedores, rótulo de teste) e uma correção"
+corretiva,BigPizzaV3/CodexPlusPlus,v1.2.17,sim,notas_da_release (cache da coleta) + commits,Toda a release visa corrigir o marketplace de plugins indisponível no modo API Key
+corretiva,ClickHouse/ClickHouse,v25.11.3.54-stable,sim,notas_da_release (cache da coleta) + commits,Release de manutenção da linha 25.11: só backports de correções
+corretiva,ClickHouse/ClickHouse,v25.11.9.34-stable,sim,notas_da_release (cache da coleta) + commits,"Release de manutenção da linha 25.11: backports de correções (crashes, races)"
+corretiva,ClickHouse/ClickHouse,v26.3.9.8-lts,sim,notas_da_release (cache da coleta) + commits,Release de manutenção LTS 26.3: backports de correções
+corretiva,ClickHouse/ClickHouse,v26.3.26.3-lts,sim,notas_da_release (cache da coleta) + commits,"Manutenção LTS: backports de correções de segurança (segredo exposto, recursão sem limite)"
+corretiva,ClickHouse/ClickHouse,v26.8.7.19-lts,sim,notas_da_release (cache da coleta) + commits,Manutenção LTS 26.8: backports majoritariamente de correções
+corretiva,GrapesJS/grapesjs,v0.22.15,não,notas_da_release (cache da coleta) + commits,"Várias funcionalidades novas (boxRect dinâmico, allowEmpty, convertAttributeValues, política de import) além de correções"
+corretiva,GrapesJS/grapesjs,v0.22.16,sim,notas_da_release (cache da coleta) + commits,"Correções no sorter, guarda de DOM e link; melhoria de desempenho"
+corretiva,GrapesJS/grapesjs,v0.23.4,sim,notas_da_release (cache da coleta) + commits,Duas correções do sorter/seleção e uma melhoria de desempenho
+corretiva,GrapesJS/grapesjs,v0.23.5,sim,notas_da_release (cache da coleta) + commits,"Só correções (keymaps, frame)"
+corretiva,GrapesJS/grapesjs,v0.23.6,sim,notas_da_release (cache da coleta) + commits,"Três correções (vídeo, sorter) e uma opção nova menor"
+corretiva,Imbad0202/academic-research-skills,v3.0,não,commits,"Funcionalidades novas (anti-bajulação, detecção de intenção, verificação cruzada)"
+corretiva,Imbad0202/academic-research-skills,v3.6.2,não,CHANGELOG do repositório na tag + commits,CHANGELOG: Added (Sprint Contract)
+corretiva,Imbad0202/academic-research-skills,v3.6.3,não,CHANGELOG do repositório na tag + commits,"CHANGELOG: Added (reset boundary, resume)"
+corretiva,Imbad0202/academic-research-skills,v3.11.0,não,CHANGELOG do repositório na tag + commits,Release minor com gate de verificação de citações
+corretiva,Imbad0202/academic-research-skills,v3.22.0,não,CHANGELOG do repositório na tag + commits,"Contrato de idioma, trilha de locale e suítes de avaliação; reparos secundários"
+corretiva,K-Dense-AI/scientific-agent-skills,v2.8.1,sim,notas_da_release (página do GitHub) + commits,Único commit corrige nome de modelo inexistente
+corretiva,K-Dense-AI/scientific-agent-skills,v2.25.0,não,commits,Skill nova (GeoMaster) e suporte novo; correção de docs secundária
+corretiva,K-Dense-AI/scientific-agent-skills,v2.32.0,não,commits,Skills novas e reorganização das bases
+corretiva,K-Dense-AI/scientific-agent-skills,v2.37.1,sim,notas_da_release (página do GitHub) + commits,Corrige descrições acima do limite de 1024 caracteres do Codex
+corretiva,K-Dense-AI/scientific-agent-skills,v2.72.0,não,commits,Remove skills embutidas e adiciona guias
+corretiva,NervJS/taro,v4.1.9,sim,notas_da_release (página do GitHub) + commits,"Commits: só correções (tipos, picker, CLI)"
+corretiva,NervJS/taro,v4.1.10,não,notas_da_release (página do GitHub) + commits,Notas: API de scroll e build targets novos; seis correções
+corretiva,NervJS/taro,v4.1.11,sim,notas_da_release (página do GitHub) + commits,Commits: só correções
+corretiva,NervJS/taro,v3.6.40,sim,notas_da_release (página do GitHub) + commits,Commits: correções de ASCF na linha 3.x
+corretiva,NervJS/taro,v4.2.1,sim,notas_da_release (página do GitHub) + commits,Notas: patch com 13 itens fix e duas funcionalidades menores
+corretiva,OthmanAdi/planning-with-files,v2.2.1,não,notas_da_release (cache da coleta) + commits,Notas: New Features (recuperação de sessão)
+corretiva,OthmanAdi/planning-with-files,v2.26.0,não,notas_da_release (cache da coleta) + commits,Hooks novos para várias IDEs; correções secundárias
+corretiva,OthmanAdi/planning-with-files,v2.36.1,sim,notas_da_release (cache da coleta) + commits,Patch de segurança que corrige achados de auditoria
+corretiva,OthmanAdi/planning-with-files,v3.1.1,sim,notas_da_release (cache da coleta) + commits,Patch que corrige comando de verificação errado na documentação
+corretiva,OthmanAdi/planning-with-files,v3.13.0,não,notas_da_release (cache da coleta) + commits,Suporte novo ao Hermes Agent
+corretiva,RPCS3/rpcs3,v0.0.39,não,commits,Release periódica com centenas de commits de evolução
+corretiva,RPCS3/rpcs3,v0.0.40,não,commits,Release periódica com centenas de commits de evolução
+corretiva,RPCS3/rpcs3,v0.0.41,não,commits,Release periódica com centenas de commits de evolução
+corretiva,RPCS3/rpcs3,v0.0.42,não,commits,Release periódica com centenas de commits de evolução
+corretiva,RPCS3/rpcs3,v0.0.43,não,commits,Release periódica com centenas de commits de evolução
+corretiva,ReactiveX/RxJava,v4.0.0-alpha-7-2,não,commits,Único commit altera workflow de notificação
+corretiva,ReactiveX/RxJava,v4.0.0-alpha-09,não,commits,Migração de baseline do Java e CI
+corretiva,ReactiveX/RxJava,v4.0.0-alpha-10,não,notas_da_release (página do GitHub) + commits,Sem commits novos em relação à anterior
+corretiva,ReactiveX/RxJava,v4.0.0-alpha-12,não,notas_da_release (página do GitHub) + commits,"Só ajustes de CI (Codecov, builds opcionais)"
+corretiva,ReactiveX/RxJava,v4.0.0-alpha-13,não,commits,Melhorias de API e isolamento de testes
+corretiva,Start9Labs/start-technologies,start-sdk/v2.0.0,não,notas_da_release (cache da coleta) + commits,Versão major do SDK com funcionalidades novas
+corretiva,Start9Labs/start-technologies,start-sdk/v2.0.2,não,notas_da_release (cache da coleta) + commits,"Mudanças de build, documentação e funcionalidades; poucas correções"
+corretiva,Start9Labs/start-technologies,start-cli/v1.0.1,não,notas_da_release (cache da coleta) + commits,Uma correção e uma mudança de comportamento nova; correções não chegam a 2/3
+corretiva,Start9Labs/start-technologies,start-os/v0.4.0.1,sim,notas_da_release (cache da coleta) + commits,Notas: release de manutenção que repara a atualização e a instalação
+corretiva,Start9Labs/start-technologies,start-wrt/v1.2.1,sim,notas_da_release (cache da coleta) + commits,Notas: corrige problemas de segurança; demais commits são correções
+corretiva,SwiftOldDriver/iOS-Weekly,#355,não,commits,Edição da newsletter; os fix #N fecham issues de sugestão de artigo
+corretiva,SwiftOldDriver/iOS-Weekly,#361,não,commits,Edição da newsletter
+corretiva,SwiftOldDriver/iOS-Weekly,#364,não,commits,Edição da newsletter
+corretiva,SwiftOldDriver/iOS-Weekly,#370,não,commits,Edição da newsletter
+corretiva,SwiftOldDriver/iOS-Weekly,#378,não,commits,Edição da newsletter
+corretiva,Sylius/Sylius,v1.14.17,sim,notas_da_release (cache da coleta) + commits,Notas: única mudança é a correção da injeção do cliente HTTP no Payum
+corretiva,Sylius/Sylius,v1.12.23,sim,notas_da_release (cache da coleta) + commits,Release de segurança: corrige três vulnerabilidades
+corretiva,Sylius/Sylius,v1.13.15,sim,notas_da_release (cache da coleta) + commits,Release de segurança: corrige três vulnerabilidades
+corretiva,Sylius/Sylius,v2.2.8,sim,notas_da_release (cache da coleta) + commits,"Notas: quase só correções (ícones, validação de pagamento, build de assets)"
+corretiva,Sylius/Sylius,v2.3.0,não,notas_da_release (cache da coleta) + commits,"Versão minor com várias funcionalidades novas (Symfony 8, dark mode etc.)"
+corretiva,alpinejs/alpine,v3.15.8,sim,notas_da_release (página do GitHub) + commits,Única mudança: correção do x-model.blur
+corretiva,alpinejs/alpine,v3.15.10,sim,notas_da_release (página do GitHub) + commits,Única mudança: correção de crash do x-anchor
+corretiva,alpinejs/alpine,v3.16.1,sim,notas_da_release (página do GitHub) + commits,Única mudança: correção de compatibilidade do Persist
+corretiva,alpinejs/alpine,v3.17.1,não,notas_da_release (página do GitHub) + commits,Funcionalidade nova no plugin intersect
+corretiva,alpinejs/alpine,v3.17.4,não,notas_da_release (página do GitHub) + commits,Uma funcionalidade nova (viewport no resize) e uma correção
+corretiva,alvinunreal/oh-my-opencode-slim,v0.9.0,não,commits,"Funcionalidades novas (modo serial/paralelo, delegação)"
+corretiva,alvinunreal/oh-my-opencode-slim,v0.9.15,sim,notas_da_release (página do GitHub) + commits,Notas: quatro correções e uma funcionalidade menor
+corretiva,alvinunreal/oh-my-opencode-slim,companion-v0.1.0,não,commits,Primeira release do app companion
+corretiva,alvinunreal/oh-my-opencode-slim,v2.0.0,não,commits,Versão major
+corretiva,alvinunreal/oh-my-opencode-slim,companion-v0.1.2,não,commits,Skills novas e ajustes; correções secundárias
+corretiva,android/compose-samples,v2025.12.00,não,notas_da_release (cache da coleta) + commits,Atualizações de dependências; a correção de links do README é secundária
+corretiva,android/compose-samples,v2026.01.00,não,notas_da_release (cache da coleta) + commits,Atualizações de dependências e de actions
+corretiva,android/compose-samples,v2026.02.00,não,notas_da_release (cache da coleta) + commits,"Refatoração, CODEOWNERS e dependências"
+corretiva,android/compose-samples,v2026.03.00,não,notas_da_release (cache da coleta) + commits,Atualização do Compose BOM e remoção de deprecações
+corretiva,android/compose-samples,v2026.08.00,não,notas_da_release (cache da coleta) + commits,"Migrações, atualizações de dependências e ajustes"
+corretiva,anomalyco/sst,v3.18.8,não,notas_da_release (página do GitHub) + commits,Única mudança: atualização do provider Cloudflare
+corretiva,anomalyco/sst,v3.19.1,não,notas_da_release (página do GitHub) + commits,Uma correção e uma funcionalidade nova (KV.get)
+corretiva,anomalyco/sst,v4.3.6,não,notas_da_release (página do GitHub) + commits,"Notas: melhoria de exibição do stderr do Pulumi, sem bug citado"
+corretiva,anomalyco/sst,v4.4.0,não,commits,Funcionalidade nova (Durable Functions)
+corretiva,anomalyco/sst,v4.11.0,não,commits,Componente novo (Workflow)
+corretiva,apache/fory,v0.13.1,não,commits,Commits: várias funcionalidades novas no Rust
+corretiva,apache/fory,v0.16.0,não,commits,Release minor com funcionalidades e correções
+corretiva,apache/fory,v1.2.0,não,commits,Suporte novo a gRPC em várias linguagens
+corretiva,apache/fory,v1.7.4,não,notas_da_release (página do GitHub) + commits,"Notas: três correções, uma funcionalidade e melhorias de desempenho"
+corretiva,apache/fory,v1.7.6,não,notas_da_release (página do GitHub) + commits,"Notas: uma funcionalidade nova e uma correção, além de mudanças no processo de release"
+corretiva,apollographql/apollo-client,@apollo/client@4.0.10,sim,CHANGELOG do repositório na tag + commits,CHANGELOG: patch que corrige vazamento de memória
+corretiva,apollographql/apollo-client,@apollo/client@4.1.7,sim,CHANGELOG do repositório na tag + commits,CHANGELOG: patch que corrige interoperabilidade com RxJS
+corretiva,apollographql/apollo-client,@apollo/client@4.2.2,sim,CHANGELOG do repositório na tag + commits,CHANGELOG: patch que corrige igualdade referencial no refetch
+corretiva,apollographql/apollo-client,@apollo/client-graphql-codegen@2.1.0,não,commits,Só amplia as versões major aceitas das dependências
+corretiva,apollographql/apollo-client,@apollo/client@4.2.10,sim,CHANGELOG do repositório na tag + commits,CHANGELOG: patch com correções de tipos
+corretiva,cloudflare/workerd,v1.20251003.0,não,commits,Release diária automática: refatorações de build e limpeza de flags
+corretiva,cloudflare/workerd,v1.20260127.0,não,commits,"Release diária: melhoria de mensagens de erro, CI e dependências"
+corretiva,cloudflare/workerd,v1.20260417.1,não,commits,Release diária com uma refatoração interna (Exception.clone)
+corretiva,cloudflare/workerd,v1.20260516.1,não,commits,Release diária sem mudanças além do próprio corte
+corretiva,cloudflare/workerd,v1.20260911.1,não,notas_da_release (página do GitHub) + commits,"Três correções, uma API nova (net.BoundSocket) e refatoração; correções não chegam a 2/3"
+corretiva,code-yeongyu/oh-my-openagent,v0.1.7,sim,commits (página da release sem notas),Commits: só fix/hotfix
+corretiva,code-yeongyu/oh-my-openagent,v2.4.2,sim,notas_da_release (página do GitHub) + commits,Commits: duas correções
+corretiva,code-yeongyu/oh-my-openagent,v3.8.5,sim,notas_da_release (página do GitHub) + commits,"Notas: predominam correções do hashline-edit, sem funcionalidade nova"
+corretiva,code-yeongyu/oh-my-openagent,v3.15.1,não,notas_da_release (página do GitHub) + commits,Notas: release de compatibilidade (renomeação do pacote) e endurecimento
+corretiva,code-yeongyu/oh-my-openagent,v4.7.2,sim,notas_da_release (página do GitHub) + commits,Única mudança: correção no sync do lazycodex
+corretiva,codeforreal1/compressO,1.3.0,não,commits,Commits: funcionalidades e migração para Tauri v2
+corretiva,codeforreal1/compressO,1.4.0,sim,notas_da_release (página do GitHub) + commits,Única mudança: correção do drag and drop no Windows
+corretiva,codeforreal1/compressO,2.1.0,não,commits,Commits: várias funcionalidades da timeline
+corretiva,codeforreal1/compressO,2.1.1,sim,notas_da_release (página do GitHub) + commits,Commits: correções de UI e de formato de duração
+corretiva,codeforreal1/compressO,3.0.0,não,CHANGELOG do repositório na tag + commits,CHANGELOG: funcionalidades novas (compressão de imagens etc.)
+corretiva,cvat-ai/cvat,v2.51.0,não,notas_da_release (cache da coleta) + commits,"Release minor com Added/Changed/Removed; correções são parte, não o objetivo"
+corretiva,cvat-ai/cvat,v2.56.0,não,notas_da_release (cache da coleta) + commits,"Várias funcionalidades novas (ordenar por rótulo, votos, navegação)"
+corretiva,cvat-ai/cvat,v2.69.0,não,notas_da_release (cache da coleta) + commits,"Funcionalidades novas (workers configuráveis, SDK) e atualizações de dependências"
+corretiva,cvat-ai/cvat,v2.71.0,não,notas_da_release (cache da coleta) + commits,Comandos novos na CLI e suporte a agentes interativos
+corretiva,cvat-ai/cvat,v2.72.0,não,notas_da_release (cache da coleta) + commits,Comandos novos na CLI e mudanças de empacotamento; correções secundárias
+corretiva,darrylmorley/whatcable,v0.4.1,sim,notas_da_release (página do GitHub) + commits,"Notas: What is fixed, portas USB-C não detectadas em M1/M2"
+corretiva,darrylmorley/whatcable,v0.4.6,sim,notas_da_release (página do GitHub) + commits,Única mudança: corrige Check for Updates ignorado
+corretiva,darrylmorley/whatcable,v0.6.1,não,notas_da_release (página do GitHub) + commits,Flag nova de diagnóstico na CLI
+corretiva,darrylmorley/whatcable,v0.10.12,não,notas_da_release (página do GitHub) + commits,Notas: What is new (dados CIO no relatório)
+corretiva,darrylmorley/whatcable,v0.99.2,sim,notas_da_release (página do GitHub) + commits,Notas: Two small fixes
+corretiva,decaporg/decap-cms,decap-cms@3.10.1,sim,notas_da_release (página do GitHub) + commits,"Commits: correções (a11y, avisos, dependência incompatível) e tarefas"
+corretiva,decaporg/decap-cms,decap-cms@3.12.0,não,commits,Commits: várias funcionalidades novas no editor
+corretiva,decaporg/decap-cms,decap-cms@3.15.1,sim,notas_da_release (página do GitHub) + commits,Única mudança: corrige versão incompatível do react-toastify
+corretiva,decaporg/decap-cms,decap-cms@3.16.1,sim,notas_da_release (página do GitHub) + commits,"Commits: maioria correções (preview, i18n, relation, list)"
+corretiva,decaporg/decap-cms,decap-cms@3.16.3,não,notas_da_release (página do GitHub) + commits,Melhorias do painel de notas e de desempenho; correções secundárias
+corretiva,deepspeedai/DeepSpeed,v0.18.1,não,commits,"Commits: funcionalidades novas (DataStates-LLM, Ulysses, LR em tensor)"
+corretiva,deepspeedai/DeepSpeed,v0.18.3,não,commits,"Commits: funcionalidades novas (API de timers, compiled autograd, baixa precisão)"
+corretiva,deepspeedai/DeepSpeed,v0.18.4,sim,notas_da_release (página do GitHub) + commits,Notas: Patch Release com 14 correções e nenhuma funcionalidade nova
+corretiva,deepspeedai/DeepSpeed,v0.19.4,não,commits,Commits: suporte novo a acumulação de gradientes não gerenciada além de correções
+corretiva,deepspeedai/DeepSpeed,v0.19.6,não,notas_da_release (página do GitHub) + commits,"Notas: 26 correções, mas 13 funcionalidades novas"
+corretiva,deer-flow/llm-space,v4.1.0,sim,CHANGELOG do repositório na tag + commits,CHANGELOG: release de manutenção; sete correções e três provedores novos (70% correções)
+corretiva,deer-flow/llm-space,v4.8.1,não,CHANGELOG do repositório na tag + commits,Polimento de layout das configurações; a correção é cosmética e secundária
+corretiva,deer-flow/llm-space,v4.11.0,não,CHANGELOG do repositório na tag + commits,Funcionalidades novas (instalar plugins por ZIP)
+corretiva,deer-flow/llm-space,v4.13.0,não,CHANGELOG do repositório na tag + commits,Melhorias de navegação e de caminhos; não corrige defeito recente
+corretiva,deer-flow/llm-space,v4.14.1,sim,CHANGELOG do repositório na tag + commits,CHANGELOG: só Fixed (ordenação da lista de imports)
+corretiva,docling-project/docling,v2.79.0,sim,CHANGELOG do repositório na tag + commits,CHANGELOG: quatro correções e uma funcionalidade menor
+corretiva,docling-project/docling,v2.94.0,não,CHANGELOG do repositório na tag + commits,CHANGELOG: várias funcionalidades novas
+corretiva,docling-project/docling,v2.99.0,não,CHANGELOG do repositório na tag + commits,CHANGELOG: duas funcionalidades e duas correções
+corretiva,docling-project/docling,v2.109.0,não,CHANGELOG do repositório na tag + commits,CHANGELOG: três funcionalidades novas
+corretiva,docling-project/docling,v2.131.0,não,CHANGELOG do repositório na tag + commits,CHANGELOG: suporte novo a Keynote além das correções
+corretiva,eugeniughelbur/obsidian-second-brain,v0.6.0,não,commits,Único commit liga uma regra nova a todos os comandos (funcionalidade)
+corretiva,eugeniughelbur/obsidian-second-brain,v0.8.0,não,CHANGELOG do repositório na tag + commits,CHANGELOG: Added (/notebooklm reescrito)
+corretiva,eugeniughelbur/obsidian-second-brain,v0.9.0,não,CHANGELOG do repositório na tag + commits,Comandos novos e modo gratuito; ajustes secundários
+corretiva,eugeniughelbur/obsidian-second-brain,v0.13.0,não,CHANGELOG do repositório na tag + commits,"Correção de segurança e várias correções, mas também muitas funcionalidades novas"
+corretiva,eugeniughelbur/obsidian-second-brain,v0.17.0,não,CHANGELOG do repositório na tag + commits,CHANGELOG: Added
+corretiva,expressjs/express,4.22.0,sim,CHANGELOG do repositório na tag + commits,History.md: correção de segurança (CVE-2024-51999)
+corretiva,expressjs/express,v5.2.0,sim,CHANGELOG do repositório na tag + commits,History.md: correção de segurança (CVE-2024-51999) é o motivo da release
+corretiva,expressjs/express,v5.2.1,sim,CHANGELOG do repositório na tag + commits,Reverte a correção de segurança que quebrou o comportamento (regressão)
+corretiva,expressjs/express,v4.22.1,sim,CHANGELOG do repositório na tag + commits,Reverte a correção de segurança que quebrou o comportamento (regressão)
+corretiva,expressjs/express,v4.22.2,sim,CHANGELOG do repositório na tag + commits,History.md: corrige o parsing de arrays em req.query
+corretiva,facebook/rocksdb,v10.6.2,sim,CHANGELOG do repositório na tag + commits,HISTORY.md: só Bug Fixes (race na compactação FIFO)
+corretiva,facebook/rocksdb,v10.8.3,não,CHANGELOG do repositório na tag + commits,HISTORY.md: New Features (API nova)
+corretiva,facebook/rocksdb,v8.11.5,sim,CHANGELOG do repositório na tag + commits,Backport que corrige problema de compatibilidade de leitura do MANIFEST
+corretiva,facebook/rocksdb,v11.0.4,não,CHANGELOG do repositório na tag + commits,"Mudança de API (volta a remover variantes obsoletas), não correção de defeito"
+corretiva,facebook/rocksdb,v11.1.2,sim,CHANGELOG do repositório na tag + commits,HISTORY.md: corrige DB somente-leitura apagando SSTs vivos
+corretiva,getzola/zola,v0.22.1,sim,notas_da_release (cache da coleta) + commits,CHANGELOG: atualização para corrigir decodificação JPEG e conteúdo faltando na busca
+corretiva,getzola/zola,v0.23.1,sim,notas_da_release (cache da coleta) + commits,CHANGELOG: corrige imagens Docker sem certificados
+corretiva,getzola/zola,v0.23.2,sim,notas_da_release (cache da coleta) + commits,"CHANGELOG: correções da 0.23.0 (CSS, footnotes, get_env)"
+corretiva,getzola/zola,v0.23.5,sim,notas_da_release (cache da coleta) + commits,"CHANGELOG: maioria correções (text_direction, taxonomias, PNG)"
+corretiva,getzola/zola,v0.23.6,sim,notas_da_release (cache da coleta) + commits,Completa a atualização do Tera que a 0.23.5 não aplicou de fato
+corretiva,gitroomhq/postiz-app,v2.8.2,sim,notas_da_release (página do GitHub) + commits,Notas: Fix prisma (atualização recomendada) e correção no X; Sentry é secundário
+corretiva,gitroomhq/postiz-app,v2.8.3,não,commits (página da release sem notas),Única mudança: versão maior do Node
+corretiva,gitroomhq/postiz-app,v2.15.1,sim,notas_da_release (página do GitHub) + commits,Notas: General Fixes
+corretiva,gitroomhq/postiz-app,v2.19.0,não,commits,Commits: várias funcionalidades novas
+corretiva,gitroomhq/postiz-app,v2.21.1,sim,notas_da_release (página do GitHub) + commits,Notas: corrige a vulnerabilidade GHSA-vj2p-7pgw-g2wf
+corretiva,graphql/graphiql,vscode-graphql-execution@0.3.5,não,CHANGELOG do repositório na tag + commits,"CHANGELOG: versão queimada por falha na publicação anterior, sem mudança de código"
+corretiva,graphql/graphiql,codemirror-graphql@2.2.6,não,CHANGELOG do repositório na tag + commits,CHANGELOG: muda o alvo de emissão do TypeScript
+corretiva,graphql/graphiql,@graphiql/plugin-doc-explorer@0.4.4,não,CHANGELOG do repositório na tag + commits,CHANGELOG: só atualização de dependências
+corretiva,graphql/graphiql,graphiql@5.4.0,não,CHANGELOG do repositório na tag + commits,CHANGELOG: Minor Changes com funcionalidade nova
+corretiva,graphql/graphiql,@graphiql/plugin-code-exporter@5.1.4,não,CHANGELOG do repositório na tag + commits,CHANGELOG: só atualização de dependências
+corretiva,handy-computer/transcribe.cpp,v0.0.5,não,commits,Mudanças de build e empacotamento
+corretiva,handy-computer/transcribe.cpp,v0.0.10,não,commits,"CI, threadpool nativo e builds CUDA; correções secundárias"
+corretiva,handy-computer/transcribe.cpp,v0.1.0,não,commits,"Modelos novos (breeze-asr, granite)"
+corretiva,handy-computer/transcribe.cpp,v0.1.3,não,commits (página da release sem notas),Melhorias de build e de seleção de GPU
+corretiva,handy-computer/transcribe.cpp,v0.2.1,não,commits (página da release sem notas),"Duas correções entre melhorias de desempenho, diagnóstico e upgrade do ggml"
+corretiva,homarr-labs/homarr,v1.40.0,não,CHANGELOG do repositório na tag + commits,CHANGELOG: várias Features
+corretiva,homarr-labs/homarr,v1.43.2,não,CHANGELOG do repositório na tag + commits,Bug Fixes são apenas atualizações rotineiras de dependências
+corretiva,homarr-labs/homarr,v1.57.0,não,CHANGELOG do repositório na tag + commits,CHANGELOG: várias Features
+corretiva,homarr-labs/homarr,v1.67.0,não,CHANGELOG do repositório na tag + commits,"CHANGELOG: Features (analytics, uso de CPU/memória) além de correções"
+corretiva,homarr-labs/homarr,v1.77.2,sim,CHANGELOG do repositório na tag + commits,Atualizações de dependências marcadas como segurança e uma correção de widget
+corretiva,huggingface/transformers,v4.57.2,sim,notas_da_release (página do GitHub) + commits,Notas: patch que corrige principalmente tokenizers Mistral
+corretiva,huggingface/transformers,v5.5.2,sim,notas_da_release (página do GitHub) + commits,Patch com correções do Gemma4 e de mapeamentos de conversão
+corretiva,huggingface/transformers,v5.8.1,sim,notas_da_release (página do GitHub) + commits,Patch com correções do DeepSeek V4 e do batching contínuo
+corretiva,huggingface/transformers,v5.17.0,não,commits,Release minor com modelos novos e funcionalidades
+corretiva,huggingface/transformers,v5.18.0,não,commits,Release minor com modelos novos e funcionalidades
+corretiva,keycloak/keycloak,26.4.7,sim,notas_da_release (página do GitHub) + commits,"Patch da linha 26.4: correções (race no SAML, cache de grupos) e Quarkus LTS"
+corretiva,keycloak/keycloak,26.5.4,sim,notas_da_release (página do GitHub) + commits,Patch da linha 26.5: correções de segurança e de bugs
+corretiva,keycloak/keycloak,26.5.6,sim,notas_da_release (página do GitHub) + commits,Patch da linha 26.5: endurecimento de controle de acesso e correções
+corretiva,keycloak/keycloak,26.5.7,sim,notas_da_release (página do GitHub) + commits,Patch da linha 26.5: correção de CVE e de controle de acesso
+corretiva,keycloak/keycloak,26.7.3,sim,notas_da_release (página do GitHub) + commits,"Patch da linha 26.7: correções de segurança (bypass de autenticação, validação de redirect)"
+corretiva,langchain-ai/deepagents,langchain-modal==0.0.2,não,notas_da_release (cache da coleta) + commits,"Bump de versões e tarefas de manutenção, sem defeito corrigido no pacote"
+corretiva,langchain-ai/deepagents,deepagents==0.4.8,não,notas_da_release (cache da coleta) + commits,"Funcionalidades novas (factory de middleware, métrica de evals, modo ACP)"
+corretiva,langchain-ai/deepagents,deepagents==0.6.2,sim,notas_da_release (cache da coleta) + commits,Notas: cinco correções e uma funcionalidade menor
+corretiva,langchain-ai/deepagents,langchain-quickjs==0.1.4,sim,notas_da_release (cache da coleta) + commits,Notas: só Bug Fixes
+corretiva,langchain-ai/deepagents,deepagents-code==0.1.53,sim,notas_da_release (cache da coleta) + commits,"Notas: sete correções e três funcionalidades menores (70% correções, sem destaque)"
+corretiva,lbjlaq/Antigravity-Manager,v3.3.49,não,notas_da_release (página do GitHub) + commits,Notas: cinco correções entre seis melhorias e uma funcionalidade nova
+corretiva,lbjlaq/Antigravity-Manager,v4.2.4,sim,notas_da_release (página do GitHub) + commits,"Notas: só correções (perda de histórico, sincronização da CLI)"
+corretiva,lbjlaq/Antigravity-Manager,v4.2.7,não,notas_da_release (página do GitHub) + commits,Notas: começa por uma integração nova; três correções
+corretiva,lbjlaq/Antigravity-Manager,v4.3.8,sim,notas_da_release (página do GitHub) + commits,"Notas: só correções (contagem de tokens, instalação no macOS)"
+corretiva,lbjlaq/Antigravity-Manager,v4.7.7,não,notas_da_release (página do GitHub) + commits,Notas: maioria funcionalidades e melhorias
+corretiva,louis-e/arnis,v2.3.1,não,notas_da_release (página do GitHub) + commits,"Notas: funcionalidades novas (montanhas-russas, modo terreno) e correções"
+corretiva,louis-e/arnis,v2.5.1,não,notas_da_release (página do GitHub) + commits,Notas: Quality Update com funcionalidades novas e muitas correções
+corretiva,louis-e/arnis,v2.7.0,não,commits,Release minor com funcionalidades novas
+corretiva,louis-e/arnis,v2.9.0,não,commits,Release minor com funcionalidades novas
+corretiva,louis-e/arnis,v3.1.0,não,commits,Release minor com melhorias e funcionalidades
+corretiva,microsoft/winget-cli,v1.12.350,não,notas_da_release (cache da coleta) + commits,"Release candidate da 1.12 com funcionalidades novas (MCP, fontes)"
+corretiva,microsoft/winget-cli,v1.12.460,sim,notas_da_release (cache da coleta) + commits,Notas: servicing release; commits só de correções
+corretiva,microsoft/winget-cli,v1.12.470,sim,notas_da_release (cache da coleta) + commits,Notas: servicing release da 1.12
+corretiva,microsoft/winget-cli,v1.28.240,sim,notas_da_release (cache da coleta) + commits,Notas: servicing release da 1.28
+corretiva,microsoft/winget-cli,v1.29.380,sim,notas_da_release (cache da coleta) + commits,Notas: servicing release; único commit é correção de caminho relativo
+corretiva,mihomo-party-org/clash-party,v1.8.9,não,CHANGELOG do repositório na tag + commits,changelog: muitas funcionalidades novas
+corretiva,mihomo-party-org/clash-party,v1.9.5,não,CHANGELOG do repositório na tag + commits,changelog: muitas funcionalidades novas
+corretiva,mihomo-party-org/clash-party,v1.9.6,não,CHANGELOG do repositório na tag + commits,changelog: muitas funcionalidades novas
+corretiva,mihomo-party-org/clash-party,v2.0.0,não,CHANGELOG do repositório na tag + commits,Versão major com mecanismo de plugins
+corretiva,mihomo-party-org/clash-party,v2.0.2,sim,CHANGELOG do repositório na tag + commits,changelog: só correções
+corretiva,nanocoai/nanoclaw,v2.0.64,sim,notas_da_release (cache da coleta) + commits,Notas: uma única correção (destinos aprovados não chegavam ao receptor)
+corretiva,nanocoai/nanoclaw,v2.1.0,não,notas_da_release (cache da coleta) + commits,Rollup com mudança incompatível e funcionalidades (tripwire de upgrade)
+corretiva,nanocoai/nanoclaw,v2.1.17,não,notas_da_release (cache da coleta) + commits,Rollup com provedor novo (Codex) e atualização incompatível do SDK
+corretiva,nanocoai/nanoclaw,v2.2.0,não,notas_da_release (cache da coleta) + commits,"Funcionalidades novas (templates como Agent Plugins, update in place)"
+corretiva,nanocoai/nanoclaw,v2.3.0,não,notas_da_release (cache da coleta) + commits,Nova experiência no Slack e outras funcionalidades
+corretiva,node-red/node-red,4.1.8,não,CHANGELOG do repositório na tag + commits,"Maintenance Release, mas com várias funcionalidades novas (ações, badges, opções de tema)"
+corretiva,node-red/node-red,4.1.9,não,CHANGELOG do repositório na tag + commits,"Quatro correções e duas funcionalidades novas (npm embutido, defaults por settings)"
+corretiva,node-red/node-red,5.0.3,sim,CHANGELOG do repositório na tag + commits,Reverte atualização do JSONata por regressão
+corretiva,node-red/node-red,5.0.5,sim,CHANGELOG do repositório na tag + commits,"Maioria correções (exceção no json node, TLS, eventos, grupos)"
+corretiva,node-red/node-red,5.0.7,sim,CHANGELOG do repositório na tag + commits,"Correções (typedInput, completion, fios no tema escuro) e dependências"
+corretiva,paperclipai/paperclip,v2026.318.0,não,notas_da_release (cache da coleta) + commits,Highlights: framework de plugins e outras funcionalidades
+corretiva,paperclipai/paperclip,v2026.325.0,não,notas_da_release (cache da coleta) + commits,Highlights: import/export de empresas e outras funcionalidades
+corretiva,paperclipai/paperclip,v2026.512.0,não,notas_da_release (cache da coleta) + commits,Highlights: modo de planejamento e busca
+corretiva,paperclipai/paperclip,v2026.618.0,não,notas_da_release (cache da coleta) + commits,Highlights: Skills Store e sandbox auto-hospedável
+corretiva,paperclipai/paperclip,v2026.831.1,sim,notas_da_release (cache da coleta) + commits,Notas: patch com uma única correção do onboarding
+corretiva,pgcentralfoundation/pgrx,v0.18.0,não,notas_da_release (página do GitHub) + commits,Notas: seis funcionalidades novas e mudanças incompatíveis
+corretiva,pgcentralfoundation/pgrx,v0.19.0,não,commits,Suporte novo ao PG19 e macros novas
+corretiva,pgcentralfoundation/pgrx,v0.19.1,sim,notas_da_release (página do GitHub) + commits,Commits: restaura símbolos faltantes do PG19 e corrige diretório do socket de teste
+corretiva,pgcentralfoundation/pgrx,v0.19.2,não,notas_da_release (página do GitHub) + commits,"Suporte novo (Uuid, pg19beta2) junto com três correções"
+corretiva,pgcentralfoundation/pgrx,v0.19.3,não,commits,Opções novas de CLI e suporte ao beta4; uma correção de segurança de memória
+corretiva,pmndrs/zustand,v5.0.9,não,notas_da_release (página do GitHub) + commits,Middleware experimental novo e playground
+corretiva,pmndrs/zustand,v5.0.10,sim,notas_da_release (página do GitHub) + commits,Única mudança de código: corrige race no rehydrate do persist
+corretiva,pmndrs/zustand,v5.0.12,sim,notas_da_release (página do GitHub) + commits,"Mudanças de código são correções (devtools, persist); resto docs"
+corretiva,pmndrs/zustand,v5.0.14,sim,notas_da_release (página do GitHub) + commits,Única mudança de código: correção de inferência de tipos do devtools
+corretiva,pmndrs/zustand,v5.0.15,sim,notas_da_release (página do GitHub) + commits,"Mudanças de código são correções (persist, devtools); resto docs"
+corretiva,psf/black,25.11.0,não,CHANGELOG do repositório na tag + commits,Highlights: suporte a Python 3.14 e t-strings
+corretiva,psf/black,26.1.0,não,CHANGELOG do repositório na tag + commits,Introduz o estilo estável de 2026
+corretiva,psf/black,26.3.0,sim,CHANGELOG do repositório na tag + commits,CHANGES.md: maioria correções de formatação e empacotamento; uma melhoria de desempenho
+corretiva,psf/black,26.3.1,sim,CHANGELOG do repositório na tag + commits,Corrige corrupção de células Jupyter e endurece o blackd
+corretiva,psf/black,26.5.1,sim,CHANGELOG do repositório na tag + commits,Corrige formatação instável e a versão dos executáveis
+corretiva,pydantic/monty,v0.0.13,não,commits,Uma funcionalidade nova (os e mount) e uma correção de tipos
+corretiva,pydantic/monty,v0.0.15,não,commits,Várias funcionalidades novas
+corretiva,pydantic/monty,v0.0.16,não,notas_da_release (página do GitHub) + commits,"Notas: melhoria de segurança de entrada e renomeação, sem bug citado"
+corretiva,pydantic/monty,v0.0.23,não,commits,"Funcionalidades novas (str.format, itertools)"
+corretiva,pydantic/monty,v1.0.0-beta.1,não,commits,Beta de versão major
+corretiva,redpanda-data/connect,v4.66.1,não,notas_da_release (cache da coleta) + commits,Notas: output novo e suporte a CDC entram junto com duas correções
+corretiva,redpanda-data/connect,v4.85.0,não,notas_da_release (cache da coleta) + commits,Release minor com várias funcionalidades (Added)
+corretiva,redpanda-data/connect,v4.90.3,não,notas_da_release (cache da coleta) + commits,Patch que traz dois conectores/recursos novos além das correções
+corretiva,redpanda-data/connect,v4.96.3,sim,notas_da_release (cache da coleta) + commits,"Notas: correções (vazamento de memória, TLS) e uma métrica nova menor"
+corretiva,redpanda-data/connect,v4.104.0,sim,notas_da_release (cache da coleta) + commits,Notas: só a seção Fixed
+corretiva,rowboatlabs/rowboat,v0.1.52,não,commits,"Funcionalidades novas (busca web, erros do stream na UI)"
+corretiva,rowboatlabs/rowboat,v0.1.53,não,commits,"Funcionalidades novas (confirmação de exclusão, templates)"
+corretiva,rowboatlabs/rowboat,v0.1.85,sim,notas_da_release (página do GitHub) + commits,Notas: única mudança é a correção do login com Google OAuth
+corretiva,rowboatlabs/rowboat,v0.2.7,não,commits,"Funcionalidades novas (paleta cmd+k, Claude como padrão)"
+corretiva,rowboatlabs/rowboat,v0.4.3,não,notas_da_release (página do GitHub) + commits,"Notas: mudança do modelo usado na criação de notas, sem bug citado"
+corretiva,rust-lang/rust,1.92.0,não,CHANGELOG do repositório na tag + commits,Release regular de 6 semanas com funcionalidades de linguagem e biblioteca
+corretiva,rust-lang/rust,1.93.0,não,commits,Release regular de 6 semanas
+corretiva,rust-lang/rust,1.93.1,sim,CHANGELOG do repositório na tag + commits,"Point release: corrige ICE, falso positivo do clippy e vazamento de descritores"
+corretiva,rust-lang/rust,1.94.0,não,CHANGELOG do repositório na tag + commits,Release regular de 6 semanas
+corretiva,rust-lang/rust,1.98.0,não,CHANGELOG do repositório na tag + commits,Release regular de 6 semanas
+corretiva,samtools/samtools,1.23,não,CHANGELOG do repositório na tag + commits,NEWS: New work and changes
+corretiva,samtools/samtools,1.21.1,sim,CHANGELOG do repositório na tag + commits,NEWS: Bug fixes (inclui CVE)
+corretiva,samtools/samtools,1.24,não,CHANGELOG do repositório na tag + commits,NEWS: New work and changes
+corretiva,samtools/samtools,1.22.3,sim,CHANGELOG do repositório na tag + commits,NEWS: só traz correções do HTSlib
+corretiva,samtools/samtools,1.23.2,sim,CHANGELOG do repositório na tag + commits,NEWS: só traz correções do HTSlib
+corretiva,starship/starship,v1.24.0,não,CHANGELOG do repositório na tag + commits,CHANGELOG: várias Features
+corretiva,starship/starship,v1.24.2,sim,CHANGELOG do repositório na tag + commits,CHANGELOG: só Bug Fixes
+corretiva,starship/starship,v1.25.0,não,CHANGELOG do repositório na tag + commits,CHANGELOG: várias Features
+corretiva,starship/starship,v1.25.1,sim,CHANGELOG do repositório na tag + commits,CHANGELOG: só Bug Fixes
+corretiva,starship/starship,v1.26.0,não,CHANGELOG do repositório na tag + commits,CHANGELOG: várias Features
+corretiva,twigphp/Twig,v3.25.0,não,CHANGELOG do repositório na tag + commits,"CHANGELOG: opções novas e lazy-load, sem correção"
+corretiva,twigphp/Twig,v3.27.1,sim,CHANGELOG do repositório na tag + commits,CHANGELOG: só correções
+corretiva,twigphp/Twig,v3.28.0,não,CHANGELOG do repositório na tag + commits,CHANGELOG: correções junto com várias funcionalidades e otimizações
+corretiva,twigphp/Twig,v3.29.0,não,CHANGELOG do repositório na tag + commits,"CHANGELOG: muitas correções, mas também sandbox novo, funções e depreciações"
+corretiva,twigphp/Twig,v3.30.0,não,CHANGELOG do repositório na tag + commits,"CHANGELOG: maioria otimizações de desempenho, algumas correções"
+corretiva,uutils/coreutils,0.4.0,não,notas_da_release (cache da coleta) + commits,"Release de evolução: compatibilidade, desempenho e funcionalidades"
+corretiva,uutils/coreutils,0.5.0,não,notas_da_release (cache da coleta) + commits,Release de evolução com melhorias de plataforma e funcionalidades
+corretiva,uutils/coreutils,0.6.0,não,notas_da_release (cache da coleta) + commits,"Release de evolução com muitas melhorias, não focada em defeito recente"
+corretiva,uutils/coreutils,0.8.0,não,notas_da_release (cache da coleta) + commits,Release com ganhos de desempenho e suporte a WASI
+corretiva,uutils/coreutils,0.11.0,não,notas_da_release (cache da coleta) + commits,Release com motor novo de mensagens de erro e desempenho
+corretiva,verl-project/verl,v0.6.0,não,commits,Release minor com centenas de commits e funcionalidades novas
+corretiva,verl-project/verl,v0.7.1,não,commits,Centenas de commits com algoritmos e suporte novos
+corretiva,verl-project/verl,v0.8.0,não,commits,Release minor com centenas de commits
+corretiva,verl-project/verl,v0.9.0,não,commits,Release minor com centenas de commits
+corretiva,verl-project/verl,v0.9.1,não,commits,Patch com funcionalidades novas e mudança incompatível
+corretiva,withcoral/coral,v0.1.3,não,commits,"Commits: várias funcionalidades (conectores, comando lint) além de correções"
+corretiva,withcoral/coral,v0.5.1,sim,CHANGELOG do repositório na tag + commits,CHANGELOG: três correções e uma funcionalidade menor
+corretiva,withcoral/coral,v0.6.0,não,CHANGELOG do repositório na tag + commits,Mudanças incompatíveis e funcionalidades novas
+corretiva,withcoral/coral,v0.7.0,não,CHANGELOG do repositório na tag + commits,Mudanças incompatíveis e funcionalidades novas
+corretiva,withcoral/coral,v0.14.2,não,CHANGELOG do repositório na tag + commits,CHANGELOG: só Features
+corretiva,wled/WLED,v0.15.2,sim,notas_da_release (página do GitHub) + commits,Notas: atualização de manutenção da 0.15.x com foco em correções e backports
+corretiva,wled/WLED,v0.15.3,sim,notas_da_release (página do GitHub) + commits,Notas: 0.15.2 mais um hotfix para o ESP8266
+corretiva,wled/WLED,v0.15.4,sim,notas_da_release (página do GitHub) + commits,"Notas: atualização pequena centrada em correções (6 de 11 itens, uma funcionalidade)"
+corretiva,wled/WLED,v16.0.0,não,commits,Versão major
+corretiva,wled/WLED,v16.0.1,sim,notas_da_release (página do GitHub) + commits,Notas: maintenance release com 25 correções e 2 funcionalidades menores

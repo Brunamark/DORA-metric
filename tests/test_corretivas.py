@@ -43,6 +43,8 @@ def test_exemplo_do_enunciado_ponta_a_ponta(exemplo_enunciado, janela):
     v231 = linha_da(resultado, "v2.3.1")
     assert (v231["tipo_mudanca"], v231["n_fix"], v231["corretiva_semver_e_mensagem"]) == ("patch", 1, "sim")
     assert linha_da(resultado, "v2.3.0")["status_compare"] == "sem_predecessora"
+    assert v231["patch_recente_7d"] == v231["corretiva_relatorio_patch_7d"] == "sim"   # 2 dias após v2.3.0
+    assert linha_da(resultado, "v2.4.0")["corretiva_relatorio_patch_7d"] == "nao"
 
 
 def test_cada_par_e_buscado_uma_vez_mesmo_com_dois_pareamentos(exemplo_enunciado, janela):
@@ -190,7 +192,7 @@ def test_executar_grava_os_csvs(exemplo_enunciado, janela, tmp_path):
 
     with (tmp_path / "cfr_entrega_repos.csv").open(encoding="utf-8") as f:
         linhas = list(csv.DictReader(f))
-    assert len(linhas) == 2 * 6           # pareamentos x critérios
+    assert len(linhas) == 2 * 7           # pareamentos x critérios (a regra do relatório ignora o pareamento)
     with (tmp_path / "releases_corretivas.csv").open(encoding="utf-8") as f:
         assert len(list(csv.DictReader(f))) == 2 * 4
 

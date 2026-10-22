@@ -12,7 +12,7 @@ Calculamos as quatro métricas DORA (frequência de deploy, lead time, taxa de f
 1. **O repositório típico é "Medium" DORA.** Mediana de 0,40 release/semana, lead time de ~11 dias, falha de CI de ~6% e recuperação em ~2,8 h. Só 6 de 350 repositórios entregam ≥ 7 vezes por semana.
 2. **A estabilidade de CI é excelente e a velocidade de entrega é modesta.** 77% dos repositórios com dados de CI têm falha ≤ 15% (faixa Elite); mas 30% publicam menos de 1 release por mês (faixa Low).
 3. **Velocidade e estabilidade NÃO estão em trade-off quando medimos estabilidade por CI** (Spearman ρ = 0,07; p = 0,49). Isso concorda com a tese do DORA.
-4. **A conclusão se inverte com outra definição de falha.** Com o proxy de entrega (release seguida de um *patch* em ≤ 7 dias), ρ = +0,54 (mais releases → "mais falhas"). Mostramos que boa parte disso é **efeito mecânico da heurística**: quem publica muito tem mais chance de publicar algo em 7 dias, independentemente de qualquer defeito.
+4. **A conclusão se inverte com outra definição de falha.** Com o proxy de entrega (release seguida de um *patch* em ≤ 7 dias), ρ = +0,54 (mais releases → "mais falhas"). Mostramos que boa parte disso é **efeito mecânico da heurística**: quem publica muito tem mais chance de publicar algo em 7 dias, independentemente de qualquer defeito. A validação contra a amostra-ouro confirma: das releases que essa regra trata como corretivas, **44% não são** (precisão 0,56; F1 0,52, abaixo do mínimo de 0,70).
 5. **A classificação DORA de um repositório depende da definição operacional.** Entre 17% e 44% dos repositórios mudam de categoria conforme a combinação de definições escolhida (kappa ponderado de 0,34 a 0,78). A idade do repositório é o fator que mais se associa às métricas; as estrelas não explicam nada.
 
 ---
@@ -64,7 +64,13 @@ A pergunta central do laboratório é dupla: *qual é o valor das métricas?* e 
 - Escalas **logarítmicas** são usadas onde os valores variam por ordens de grandeza (cada marca é 10× a anterior).
 - Todas as estatísticas descritivas são **mediana (IQR)**, como pedido no roteiro.
 
-### 2.4 Testes estatísticos (simples e não paramétricos)
+### 2.4 Validação manual (amostra-ouro)
+
+Sorteamos 60 repositórios entre os 348 com pelo menos 5 releases avaliáveis e 5 releases de cada um (semente 42; 300 releases). Cada item recebeu três rótulos: tipo do projeto, se as releases são entregas reais ao usuário e se a release é corretiva. A rotulagem foi feita por **avaliação automatizada com um modelo de linguagem**, que leu a lista de commits de todas as releases e as notas da release ou a seção do CHANGELOG em 232 delas, sem ver a saída da heurística. A regra de decisão, a fonte e a justificativa de cada rótulo estão em `docs/protocolo_avaliacao_automatizada.md` e `validacao/justificativas_avaliacao_automatizada.csv`.
+
+Resultado: 113 das 300 releases (37,7%) são corretivas; 58 dos 60 repositórios têm releases que são entregas reais (as exceções são um repositório de apps de exemplo e uma newsletter). Como há um único avaliador, **o kappa de Fleiss não pôde ser calculado** (ver Ameaças).
+
+### 2.5 Testes estatísticos (simples e não paramétricos)
 
 Wilcoxon (uma amostra ou pareado), Spearman (correlação por postos), Kruskal-Wallis com tamanho de efeito ε² = H/(n−1), correção de Holm para 20 testes na RQ06, kappa de Cohen ponderado (linear) na RQ07 e teste binomial para a proporção de mudança de categoria. Nível de significância: 5%.
 
@@ -131,6 +137,18 @@ A mediana equivale a **uma release a cada ~2,5 semanas**. Pelos cortes DORA: 6 r
 - **Comparação pareada** (99 repositórios com as duas variantes): medianas de 6,3% (a) e 21,7% (b), Wilcoxon p = 8·10⁻⁸. **Rejeitamos H0**: as variantes medem coisas diferentes.
 
 **Por que divergem?** O CFR (a) mede *falha de pipeline*, que o desenvolvedor vê e corrige antes de publicar (um teste vermelho no PR não vira incidente). O CFR (b) tenta enxergar o que "escapou" para o usuário, mas é uma heurística grosseira: **a metade das releases (mediana de 50%) é seguida por outra release em ≤ 7 dias**, e em cerca de 75% desses casos a seguinte é só um *patch bump*. Projetos que publicam uma versão de patch a cada commit (ex.: `v0.2.11 → v0.2.12`) são marcados como "falhando" quase 100% do tempo sem que haja evidência de defeito.
+
+**Validação contra a amostra-ouro.** Tratando como "corretiva" toda release que a regra usa para marcar uma falha (um *patch* da mesma linha publicado em ≤ 7 dias), a comparação com os 300 rótulos dá:
+
+| VP | FP | FN | VN | Precisão | Recall | F1 |
+|---:|---:|---:|---:|---:|---:|---:|
+| 55 | 43 | 58 | 144 | 0,56 | 0,49 | **0,52** |
+
+- **Falsos positivos (43):** são *patches* que trazem funcionalidades novas, comuns em projetos que só incrementam o *patch* (versões 0.x e monorepos com *changesets*). Como cada falso positivo faz uma release R contar como falha, **o CFR (b) desta seção está superestimado**: quase metade das "correções" que o alimentam não corrige nada.
+- **Falsos negativos (58):** 45 são *patches* corretivos publicados mais de 7 dias depois da release anterior da linha (comuns em linhas LTS e de *backports*), e 13 não são *patch bumps* (ex.: uma *minor* só com correções). Esses casos não mudam o CFR (b), porque fora da janela de 7 dias nada conta como falha, mas pesam no *rework rate*.
+- Sem o prazo de 7 dias, o critério de versão sozinho acerta mais: 100 das 171 releases que são *patch* da mesma linha são corretivas, e 100 das 113 corretivas são *patches*.
+
+A comparação com as demais versões da heurística, que também olham as mensagens dos commits, está em `docs/heuristica_corretiva.md`.
 
 ### RQ04 — Tempo de recuperação
 
@@ -265,7 +283,8 @@ Construímos quatro combinações de definições. Todas usam recuperação de C
 **Construto (estamos medindo o que achamos?)**
 - *Release ≠ deploy.* Bibliotecas e ferramentas publicam versões, mas quem faz deploy em produção são os usuários. A "frequência de deploy" é, na prática, frequência de **publicação**.
 - *CFR (a) mede pipeline, não produção.* Uma falha de CI é muitas vezes corrigida antes de qualquer usuário ser afetado.
-- *CFR (b) não foi validado.* Não há amostra-ouro nos dados (kappa de Fleiss; precisão/recall/F1 da heurística). A regra "patch ≤ 7 dias" sem olhar mensagens de commit (`fix`, `revert`, `hotfix`) marca como falha projetos que fazem releases contínuas de patch. **Os valores de CFR (b) são um teto, não uma estimativa.** Recomenda-se refinar a heurística e medir o F1 (meta ≥ 0,70).
+- *A heurística do CFR (b) não atinge o mínimo de validade.* Contra a amostra-ouro, a regra "patch ≤ 7 dias" tem precisão 0,56 e F1 0,52 (meta ≥ 0,70). Ela não olha as mensagens de commit (`fix`, `revert`, `hotfix`) e marca como falha projetos que fazem releases contínuas de *patch*. **Os valores de CFR (b) são um teto, não uma estimativa.**
+- *A amostra-ouro tem um único avaliador automatizado.* Os rótulos vieram de um modelo de linguagem, não de três pessoas, então não há kappa de Fleiss para medir quanto o critério "release corretiva" é ambíguo. Os casos de fronteira são as releases mistas, com correções e funcionalidades na mesma versão.
 - *Datas de commit.* `author.date` é distorcida por rebase/squash: há 10.156 commits com lead time negativo.
 
 **Interna (há fatores não controlados?)**
@@ -293,7 +312,7 @@ Construímos quatro combinações de definições. Todas usam recuperação de C
 3. **Quem vai melhor?** A idade do repositório é o fator mais associado (ε² até 0,20); linguagem e número de contribuidores importam para o lead time; **estrelas não importam**.
 4. **Confiança nos números:** a mesma amostra produz de 17% a 44% de mudança de categoria conforme as definições operacionais. A escolha do proxy de falha pesa mais que a do lead time.
 
-**Próximos passos sugeridos:** (i) construir a amostra-ouro e medir precisão/recall/F1 da heurística corretiva, incorporando mensagens de commit; (ii) coletar CI para os 250 repositórios restantes; (iii) incluir *tags* com datas para completar a sensibilidade; (iv) usar modelos que controlem idade e linguagem juntas; (v) testar o bônus de evolução trimestral (RQ08).
+**Próximos passos sugeridos:** (i) avaliar contra a amostra-ouro as versões da heurística corretiva que usam mensagens de commit e recalcular o CFR (b) com a que tiver o melhor F1; (ii) coletar CI para os 250 repositórios restantes; (iii) incluir *tags* com datas para completar a sensibilidade; (iv) usar modelos que controlem idade e linguagem juntas; (v) testar o bônus de evolução trimestral (RQ08).
 
 ---
 
@@ -308,6 +327,9 @@ Arquivos gerados junto deste relatório:
 | `src/graficos.py` | gera todas as figuras de `figs/` e os números complementares |
 | `rq06_testes.csv` | tabela completa dos 20 testes da RQ06 |
 | `metricas_enriquecido_2.csv` | tabela final por repositório (uma linha por repositório) |
+| `validacao/amostra_ouro.csv`, `sorteio.json` | sorteio da amostra-ouro (`src/amostra_ouro.py`, semente 42) |
+| `validacao/rotulos_avaliacao_automatizada.csv` | rótulos das 300 releases; justificativas em `justificativas_avaliacao_automatizada.csv` |
+| `src/avaliar_heuristica.py` | precisão, recall e F1 de cada versão da heurística corretiva contra os rótulos |
 
 ```bash
 python3 src/metricas.py data/data metricas.csv

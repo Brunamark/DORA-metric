@@ -313,6 +313,7 @@ from metricas import (  # noqa: E402
     cfr_entrega,
     eh_corretiva,
     parse_versao,
+    patches_recentes,
     predecessoras,
     situacao_releases,
     tem_palavra_corretiva,
@@ -589,3 +590,28 @@ def test_releases_fora_da_janela_servem_de_contexto_mas_nao_contam():
     ]
 
     assert cfr_entrega(releases, FIM, inicio_janela=ini) == (0.0, 1, 0, 0)
+
+
+# --- regra do relatório (docs/src/metricas.py) ---------------------------------
+def test_patch_recente_marca_o_patch_da_mesma_linha_em_ate_7_dias():
+    rels = [pub("v1.2.0", 1), pub("v1.2.1", 8), pub("v1.2.2", 16), pub("v1.3.0", 17)]
+
+    assert patches_recentes(rels) == {"v1.2.0": False, "v1.2.1": True, "v1.2.2": False, "v1.3.0": False}
+
+
+def test_patch_recente_respeita_prefixo_e_major_minor():
+    rels = [pub("pkg-a@1.0.0", 1), pub("pkg-b@1.0.1", 2), pub("v2.0.0", 3), pub("v2.1.1", 4)]
+
+    assert not any(patches_recentes(rels).values())
+
+
+def test_patch_recente_aceita_mesmo_dia_e_versao_sem_patch():
+    rels = [pub("v3.1", 5, 1), pub("v3.1.1", 5, 2), pub("sem-versao", 5, 3)]
+
+    assert patches_recentes(rels) == {"v3.1": False, "v3.1.1": True, "sem-versao": False}
+
+
+def test_criterio_do_relatorio_le_so_os_extras():
+    assert avaliar_criterio("minor", None, "relatorio_patch_7d", {"patch_recente_7d": True}) is True
+    assert avaliar_criterio("patch", None, "relatorio_patch_7d", {"patch_recente_7d": False}) is False
+    assert avaliar_criterio("patch", None, "relatorio_patch_7d") is None

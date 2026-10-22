@@ -490,25 +490,66 @@ def _maioria_fix(c, limiar=0.5):
     return base > 0 and c.n_fix_amplo / base >= limiar
 
 
+def _patch_recente(x):
+    return None if x is None else x.get("patch_recente_7d")
+
+
+# Cada critério recebe (tipo de mudança, características dos commits, extras). `extras` traz
+# informações que dependem das outras releases do repositório (ex.: patch_recente_7d).
 CRITERIOS = {
     # v1 do enunciado: só o patch mudou E algum commit tem fix/hotfix/revert
-    "semver_e_mensagem": lambda t, c: _e(_so_patch(t), _tem_fix(c)),
-    "semver_ou_mensagem": lambda t, c: _ou(_so_patch(t), _tem_fix(c)),
-    "so_semver": lambda t, c: _so_patch(t),
-    "so_mensagem": lambda t, c: _tem_fix(c),
+    "semver_e_mensagem": lambda t, c, x=None: _e(_so_patch(t), _tem_fix(c)),
+    "semver_ou_mensagem": lambda t, c, x=None: _ou(_so_patch(t), _tem_fix(c)),
+    "so_semver": lambda t, c, x=None: _so_patch(t),
+    "so_mensagem": lambda t, c, x=None: _tem_fix(c),
     # refinamentos: ignora commits de dependência; exige que a maioria dos commits seja correção
-    "semver_e_mensagem_sem_deps": lambda t, c: _e(_so_patch(t), _tem_fix_sem_deps(c)),
-    "semver_e_maioria_fix": lambda t, c: _e(_so_patch(t), _maioria_fix(c)),
+    "semver_e_mensagem_sem_deps": lambda t, c, x=None: _e(_so_patch(t), _tem_fix_sem_deps(c)),
+    "semver_e_maioria_fix": lambda t, c, x=None: _e(_so_patch(t), _maioria_fix(c)),
+    # regra usada no relatório (docs/src/metricas.py): a release é um patch publicado em até
+    # 7 dias depois de outra release da mesma linha (mesmo prefixo e MAJOR.MINOR, patch menor)
+    "relatorio_patch_7d": lambda t, c, x=None: _patch_recente(x),
 }
 CRITERIO_PADRAO = "semver_e_mensagem"
 
 
-def avaliar_criterio(tipo: str | None, carac: CaracteristicasCommits | None, criterio: str = CRITERIO_PADRAO):
-    """Aplica um critério a uma release já descrita (tipo de mudança e commits).
-    `carac=None` significa commits desconhecidos (ex.: compare com 404)."""
+def avaliar_criterio(tipo: str | None, carac: CaracteristicasCommits | None, criterio: str = CRITERIO_PADRAO,
+                     extras: dict | None = None):
+    """Aplica um critério a uma release já descrita (tipo de mudança, commits e extras).
+    `carac=None` significa commits desconhecidos (ex.: compare com 404); `extras=None`,
+    informações das outras releases indisponíveis."""
     if criterio not in CRITERIOS:
         raise ValueError(f"critério desconhecido: {criterio} (opções: {', '.join(CRITERIOS)})")
-    return CRITERIOS[criterio](tipo, carac)
+    return CRITERIOS[criterio](tipo, carac, extras)
+
+
+# Leitura de versão da regra do relatório (docs/src/metricas.py), reproduzida sem mudanças:
+# prefixo + v opcional + MAJOR.MINOR[.PATCH], ancorada só no início da tag.
+_RE_VERSAO_RELATORIO = re.compile(r"^(?P<pre>.*?)[vV]?(?P<M>\d+)\.(?P<m>\d+)(?:\.(?P<p>\d+))?")
+
+
+def _versao_relatorio(tag: str):
+    m = _RE_VERSAO_RELATORIO.match(str(tag))
+    if not m:
+        return None
+    return m["pre"].strip().lower(), int(m["M"]), int(m["m"]), int(m["p"]) if m["p"] else 0
+
+
+def patches_recentes(releases: Sequence["ReleasePublicada"], prazo_dias: int = 7) -> dict[str, bool]:
+    """tag -> a release é um patch publicado em até `prazo_dias` depois de outra release da
+    mesma linha (mesmo prefixo, mesmo MAJOR.MINOR e PATCH menor). É a regra do CFR (b) do
+    relatório vista do lado da release corretiva: se S é um patch recente de R, R "falhou"."""
+    prazo = timedelta(days=prazo_dias)
+    ordem = sorted(releases, key=lambda r: r.publicada_em)
+    versoes = {r.tag: _versao_relatorio(r.tag) for r in ordem}
+    resultado = {}
+    for i, s in enumerate(ordem):
+        vs = versoes[s.tag]
+        resultado[s.tag] = vs is not None and any(
+            (vr := versoes[r.tag]) is not None and vr[:3] == vs[:3] and vr[3] < vs[3]
+            and timedelta(0) <= s.publicada_em - r.publicada_em <= prazo
+            for r in ordem[:i]
+        )
+    return resultado
 
 
 def eh_corretiva(release: str, anterior: str | None, mensagens: Iterable[str] | None,
