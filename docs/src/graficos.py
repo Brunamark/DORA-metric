@@ -1,9 +1,11 @@
-import pandas as pd, numpy as np, sys, matplotlib
+import pandas as pd, numpy as np, sys, os, matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt, seaborn as sns
 from scipy import stats
 D,M,F=sys.argv[1],sys.argv[2],sys.argv[3]
 m=pd.read_csv(M,index_col=0)
+OUT=os.path.dirname(os.path.abspath(M))
+N=lambda c: int(m[c].notna().sum())
 BL,OR,AQ,YE,MG,VI='#2a78d6','#eb6834','#1baf7a','#eda100','#e87ba4','#6250d6'
 SEQ=['#86b6ef','#3987e5','#1c5cab','#0d366b']
 INK,SEC,GRID='#0b0b0b','#52514e','#e4e3df'
@@ -25,10 +27,10 @@ def violin(ax,data,x,y,order,color,log=True,hl=None):
     return d
 # FIG1 violinos DORA com faixas
 fig,ax=plt.subplots(1,4,figsize=(14,4.6))
-spec=[('freq_release','Frequência de deploy\n(releases/semana, n=350)',[(7,'Elite ≥7'),(1,'High ≥1'),(12/52.143,'Medium ≥1/mês')],BL),
-      ('lt_a','Lead time (a) – mediana\n(dias, n=350)',[(1,'Elite <1d'),(7,'High <7d'),(30,'Medium <30d')],OR),
-      ('cfr_a','CFR (a) – falha de CI\n(proporção, n=100)',[(.15,'Elite ≤15%'),(.30,'High ≤30%'),(.45,'Medium ≤45%')],AQ),
-      ('rec_h','Tempo de recuperação – mediana\n(horas, n=95)',[(1,'Elite <1h'),(24,'High <1d'),(168,'Medium <1sem')],MG)]
+spec=[('freq_release',f'Frequência de deploy\n(releases/semana, n={N("freq_release")})',[(7,'Elite ≥7'),(1,'High ≥1'),(12/52.143,'Medium ≥1/mês')],BL),
+      ('lt_a',f'Lead time (a) – mediana\n(dias, n={N("lt_a")})',[(1,'Elite <1d'),(7,'High <7d'),(30,'Medium <30d')],OR),
+      ('cfr_a',f'CFR (a) – falha de CI\n(proporção, n={N("cfr_a")})',[(.15,'Elite ≤15%'),(.30,'High ≤30%'),(.45,'Medium ≤45%')],AQ),
+      ('rec_h',f'Tempo de recuperação – mediana\n(horas, n={N("rec_h")})',[(1,'Elite <1h'),(24,'High <1d'),(168,'Medium <1sem')],MG)]
 for a,(c,t,lines,col) in zip(ax,spec):
     d=m[[c]].dropna().assign(g='')
     log=c!='cfr_a'
@@ -81,7 +83,7 @@ m.to_csv(M.replace('.csv','_2.csv'))
 # FIG5 bolhas RQ05
 fig,ax=plt.subplots(1,2,figsize=(14,5.4))
 cmap=dict(zip(qo,SEQ))
-for a,c,t in [(ax[0],'cfr_a','(a) Proxy de CI (n=100)'),(ax[1],'cfr_b','(b) Proxy de entrega (n=344)')]:
+for a,c,t in [(ax[0],'cfr_a',f'(a) Proxy de CI (n={N("cfr_a")})'),(ax[1],'cfr_b',f'(b) Proxy de entrega (n={N("cfr_b")})')]:
     d=m[['freq_release',c,'stars','q_age']].dropna(); rho,p=stats.spearmanr(d.freq_release,d[c])
     for q in qo:
         s=d[d.q_age==q]; a.scatter(s.freq_release,s[c],s=np.sqrt(s.stars)*.9,c=cmap[q],alpha=.7,edgecolor='#fcfcfb',linewidth=.8,label=q)
@@ -102,7 +104,7 @@ for val,lab in [(1,'1 h'),(24,'1 dia'),(168,'1 semana')]:
     ax.axhline(np.log10(val),color=SEC,ls='--',lw=.8); ax.text(5.45,np.log10(val),lab,fontsize=8,color=SEC,va='bottom',ha='right')
 lo,hi=ax.get_ylim(); tk=list(range(int(np.ceil(lo)),int(np.floor(hi))+1)); ax.set_yticks(tk); ax.set_yticklabels([f'{10**v:g}' for v in tk]); ax.set_xlabel(''); ax.set_ylabel('Duração do episódio de falha (horas, log)'); ax.grid(axis='x',visible=False)
 ax.set_title('Tempo de recuperação por episódio de falha de CI, por linguagem (n = %d episódios)'%len(e)); fig.savefig(f'{F}/fig06_violino_recuperacao.png'); plt.close()
-e.groupby('lang').duracao_horas.agg(['count','median']).to_csv('/home/claude/work/rec_episodios_lang.csv')
+e.groupby('lang').duracao_horas.agg(['count','median']).to_csv(os.path.join(OUT,'rec_episodios_lang.csv'))
 print('episodios total',len(e),'mediana',e.duracao_horas.median(),'p25',e.duracao_horas.quantile(.25),'p75',e.duracao_horas.quantile(.75),'p90',e.duracao_horas.quantile(.9), 'frac<1h',(e.duracao_horas<1).mean(), '>24h',(e.duracao_horas>24).mean())
 # FIG7 matriz de bolhas RQ07
 lab={1:'Low',2:'Medium',3:'High',4:'Elite'}

@@ -1,0 +1,9 @@
+{
+  "seed": 42,
+  "n_repos": 60,
+  "n_releases_por_repo": 5,
+  "repos_na_amostra_final": 350,
+  "repos_com_releases_avaliaveis": 350,
+  "repos_elegiveis": 348,
+  "releases_avaliaveis_total": 18493
+}

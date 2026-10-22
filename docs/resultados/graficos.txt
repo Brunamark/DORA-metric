@@ -1,0 +1,16 @@
+episodios total 33517 mediana 2.1192 p25 0.7042 p75 7.7622 p90 24.707020000000018 frac<1h 0.3222543783751529 >24h 0.10517051048721544
+seguida_7d med 0.5529115341545353 frac_patch med 0.7499999999999999
+spearman freq x seguida7d SignificanceResult(statistic=np.float64(0.7490210812189224), pvalue=np.float64(5.203567170632888e-57))
+spearman freq x frac_patch SignificanceResult(statistic=np.float64(-0.16535265143268377), pvalue=np.float64(0.003503719229452009))
+Q1 (mais novos) 88 SignificanceResult(statistic=np.float64(0.6497197873513185), pvalue=np.float64(7.459232785949679e-12))
+Q2 87 SignificanceResult(statistic=np.float64(0.6536334694403033), pvalue=np.float64(6.7314092518354046e-12))
+Q3 85 SignificanceResult(statistic=np.float64(0.3836354975122959), pvalue=np.float64(0.00028975486041987454))
+Q4 (mais antigos) 84 SignificanceResult(statistic=np.float64(0.09013396987317916), pvalue=np.float64(0.41485772115170416))
+15 78
+cfra Q1 (mais novos) 88 -0.17724853099090998
+cfra Q2 87 0.036789544470828134
+cfra Q3 87 0.17650771221741487
+cfra Q4 (mais antigos) 88 0.24235105193108084
+CFR a repos >0.45 14 cfr_a<=.15 283
+freq: <1/mo 0.3028571428571429 >=1/sem 0.2342857142857143 >=7 6
+lt<1d 0.12857142857142856 >=30d 0.2885714285714286
