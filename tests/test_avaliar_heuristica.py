@@ -59,6 +59,31 @@ def test_consenso_detecta_a_coluna_e_descarta_incertos():
     assert descartados == 1
 
 
+def test_consenso_no_formato_longo_usa_so_a_dimensao_corretiva():
+    linhas = [
+        {"dimensao": "tipo_projeto", "repo": "o/r", "tag": "v1", "votos": "", "rotulo_consenso": "não", "decidido_em": "maioria"},
+        {"dimensao": "corretiva", "repo": "o/r", "tag": "v1", "votos": "", "rotulo_consenso": "sim", "decidido_em": "maioria"},
+        {"dimensao": "corretiva", "repo": "o/r", "tag": "v2", "votos": "", "rotulo_consenso": "", "decidido_em": "reuniao"},
+    ]
+
+    rotulos, descartados = ler_consenso(linhas)
+
+    assert rotulos == {("o/r", "v1"): True}
+    assert descartados == 1
+
+
+def test_planilha_de_rotulagem_com_repo_e_tag():
+    linhas = [
+        {"repo": "o/r", "tag": "v1", "tag_anterior": "v0", "tipo_projeto": "sim", "releases_reais": "sim", "corretiva": "não"},
+        {"repo": "o/r", "tag": "v2", "tag_anterior": "v1", "tipo_projeto": "sim", "releases_reais": "sim", "corretiva": "sim"},
+    ]
+
+    rotulos, descartados = ler_consenso(linhas)
+
+    assert rotulos == {("o/r", "v1"): False, ("o/r", "v2"): True}
+    assert descartados == 0
+
+
 def carac(tag, pareamento, **corretivas):
     linha = {"full_name": "o/r", "tag_name": tag, "pareamento": pareamento, "tipo_mudanca": "patch",
              "predecessora": "v0", "n_commits": "1", "n_fix": "1"}

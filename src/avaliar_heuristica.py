@@ -7,9 +7,12 @@ de consenso da dimensão (iii) da amostra-ouro ("a release é corretiva?") e cal
 precisão, recall e F1 com sklearn.metrics.precision_recall_fscore_support.
 
 Entradas:
-  --consenso         validacao/consenso.csv (issue #9): colunas full_name, tag_name e o rótulo
-                     (`corretiva_consenso` ou `corretiva`, valores sim/não). Rótulos "incerto"
-                     ou vazios ficam fora e são contados.
+  --consenso         rótulos da amostra-ouro, em qualquer um destes formatos (valores sim/não;
+                     "incerto" ou vazio fica fora e é contado):
+                       - consenso da issue #9 (src/consenso.py), formato longo: dimensao, repo,
+                         tag, rotulo_consenso (só as linhas com dimensao = corretiva são usadas);
+                       - planilha de rotulagem (src/amostra_ouro.py): repo, tag, corretiva;
+                       - formato largo: full_name, tag_name e `corretiva_consenso` ou `corretiva`.
   --caracteristicas  src/data/releases_corretivas.csv (etapa `corretivas` do pipeline)
 
 Saídas em --saida (padrão: validacao/):
@@ -44,7 +47,7 @@ CAMPOS_AVALIACAO = [
 ]
 CAMPOS_ERROS = [
     "versao", "erro", "full_name", "tag_name", "predecessora", "tipo_mudanca",
-    "n_commits", "n_fix", "n_fix_amplo", "n_fix_deps", "notas_mencionam_correcao",
+    "n_commits", "n_fix", "n_fix_amplo", "n_fix_deps", "notas_mencionam_correcao", "patch_recente_7d",
 ]
 
 
@@ -89,8 +92,19 @@ def ler_csv(caminho: Path) -> list[dict]:
         return list(csv.DictReader(f))
 
 
+DIMENSAO_CORRETIVA = "corretiva"
+
+
 def ler_consenso(linhas: list[dict], coluna: str | None = None) -> tuple[dict, int]:
-    """(full_name, tag_name) -> bool, e o nº de rótulos descartados (incerto/vazio)."""
+    """(full_name, tag_name) -> bool, e o nº de rótulos descartados (incerto/vazio).
+    Aceita o formato longo do consenso, a planilha de rotulagem e o formato largo."""
+    if not linhas:
+        return {}, 0
+    if "dimensao" in linhas[0]:   # consenso.csv da issue #9: uma linha por (dimensão, release)
+        linhas = [l for l in linhas if (l.get("dimensao") or "").strip() == DIMENSAO_CORRETIVA]
+        coluna = coluna or "rotulo_consenso"
+    linhas = [{**l, "full_name": l.get("full_name") or l.get("repo", ""),
+               "tag_name": l.get("tag_name") or l.get("tag", "")} for l in linhas]
     if not linhas:
         return {}, 0
     if coluna is None:

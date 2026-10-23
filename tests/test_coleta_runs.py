@@ -262,6 +262,49 @@ def test_executar_grava_os_quatro_csvs(janela, tmp_path):
     assert len((tmp_path / "runs.csv").read_text(encoding="utf-8").splitlines()) == 5
 
 
+def test_executar_grava_cada_repositorio_assim_que_termina(janela, tmp_path):
+    """Os runs de um repositório vão para o arquivo parcial antes do próximo começar."""
+    api = _com_contadores(ClienteRunsFalso(runs_exemplo_rq04_api()))
+    linhas_antes_do_segundo = []
+    get_original = api.get
+
+    def get(path, params=None, **kw):
+        if "outro/repo" in path and not linhas_antes_do_segundo:
+            parcial = (tmp_path / "runs.csv.parcial").read_text(encoding="utf-8").splitlines()
+            linhas_antes_do_segundo.append(len(parcial))
+        return get_original(path.replace("outro/repo", REPO), params, **kw)
+
+    api.get = get
+    repos = [{"full_name": REPO, "default_branch": "main"}, {"full_name": "outro/repo", "default_branch": "main"}]
+
+    executar(api, *janela, repos, tmp_path)
+
+    assert linhas_antes_do_segundo == [5]          # cabeçalho + 4 runs do primeiro repositório
+    assert len((tmp_path / "runs.csv").read_text(encoding="utf-8").splitlines()) == 9
+    assert not list(tmp_path.glob("*.parcial"))
+
+
+def test_interrupcao_no_meio_mantem_os_csvs_da_execucao_anterior(janela, tmp_path):
+    for nome in ("runs.csv", "episodios.csv", "runs_fatias.csv"):
+        (tmp_path / nome).write_text("execucao anterior\n", encoding="utf-8")
+    api = _com_contadores(ClienteRunsFalso(runs_exemplo_rq04_api()))
+    get_original = api.get
+
+    def get(path, params=None, **kw):
+        if "outro/repo" in path:
+            raise KeyboardInterrupt
+        return get_original(path, params, **kw)
+
+    api.get = get
+    repos = [{"full_name": REPO, "default_branch": "main"}, {"full_name": "outro/repo", "default_branch": "main"}]
+
+    with pytest.raises(KeyboardInterrupt):
+        executar(api, *janela, repos, tmp_path)
+
+    for nome in ("runs.csv", "episodios.csv", "runs_fatias.csv"):
+        assert (tmp_path / nome).read_text(encoding="utf-8") == "execucao anterior\n"
+
+
 def _com_contadores(api):
     """executar() imprime client.chamadas e client.cache_hits ao final."""
 

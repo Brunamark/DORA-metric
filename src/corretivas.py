@@ -48,6 +48,7 @@ from metricas import (
     caracteristicas_commits,
     cfr_entrega,
     parse_versao,
+    patches_recentes,
     predecessoras,
     situacao_releases,
     tem_palavra_corretiva,
@@ -72,7 +73,7 @@ TAMANHO_NOTAS = 5000             # caracteres das notas da release analisados
 CAMPOS_RELEASES = [
     "full_name", "tag_name", "published_at", "pareamento", "predecessora", "tipo_mudanca",
     "status_compare", "n_commits", "total_commits_api", "commits_truncados",
-    "n_merges", "n_fix", "n_fix_amplo", "n_fix_deps", "notas_mencionam_correcao",
+    "n_merges", "n_fix", "n_fix_amplo", "n_fix_deps", "notas_mencionam_correcao", "patch_recente_7d",
 ] + [f"corretiva_{c}" for c in CRITERIOS] + ["situacao_cfr"]
 CAMPOS_RESUMO = [
     "full_name", "status", "pareamento", "criterio", "cfr_b", "releases_avaliadas",
@@ -105,6 +106,7 @@ def processar_repo(client, fn: str, ini: datetime, fim: datetime,
     por_tag = {r["tag_name"]: r for r in brutas if publicada(r)}
     lista = [ReleasePublicada(t, parse_iso(r["published_at"])) for t, r in por_tag.items()]
     na_janela = [r for r in lista if ini <= r.publicada_em <= fim]
+    patch_recente = patches_recentes(na_janela)   # regra do relatório: só releases da janela, sem pareamento
     commits_do_par = {}   # (base, head) -> (status, títulos, total_api) — cada par buscado uma vez
 
     for pareamento in PAREAMENTOS:
@@ -113,7 +115,8 @@ def processar_repo(client, fn: str, ini: datetime, fim: datetime,
         contagem = {"compares_404": 0, "compares_erro": 0, "compares_truncados": 0}
         for r in sorted(na_janela, key=lambda x: x.publicada_em):
             base = pred[r.tag]
-            linha = _descrever(client, fn, r, base, por_tag[r.tag], commits_do_par, max_paginas, contagem)
+            linha = _descrever(client, fn, r, base, por_tag[r.tag], commits_do_par, max_paginas, contagem,
+                               {"patch_recente_7d": patch_recente[r.tag]})
             linha["pareamento"] = pareamento
             linhas[r.tag] = linha
         # Releases fora da janela entram como contexto (predecessoras), nunca como corretivas avaliadas
@@ -143,7 +146,8 @@ def processar_repo(client, fn: str, ini: datetime, fim: datetime,
     return resultado
 
 
-def _descrever(client, fn, r: ReleasePublicada, base, bruta, commits_do_par, max_paginas, contagem) -> dict:
+def _descrever(client, fn, r: ReleasePublicada, base, bruta, commits_do_par, max_paginas, contagem,
+               extras=None) -> dict:
     """Linha de releases_corretivas.csv para a release r com predecessora `base`."""
     linha = {
         "full_name": fn, "tag_name": r.tag, "published_at": bruta["published_at"],
@@ -151,11 +155,13 @@ def _descrever(client, fn, r: ReleasePublicada, base, bruta, commits_do_par, max
         "total_commits_api": "", "commits_truncados": "", "n_merges": "", "n_fix": "",
         "n_fix_amplo": "", "n_fix_deps": "",
         "notas_mencionam_correcao": _texto_booleano(_notas_mencionam_correcao(bruta)),
+        "patch_recente_7d": _texto_booleano((extras or {}).get("patch_recente_7d")),
     }
     if base is None:   # primeira release da linha/história: não corrige nada
         linha["status_compare"] = "sem_predecessora"
-        for criterio in CRITERIOS:
-            linha[f"_corretiva_{criterio}"] = False
+        for criterio in CRITERIOS:   # a regra do relatório não usa a predecessora
+            linha[f"_corretiva_{criterio}"] = (
+                bool((extras or {}).get("patch_recente_7d")) if criterio == "relatorio_patch_7d" else False)
         return linha
 
     tipo = tipo_mudanca(parse_versao(base), parse_versao(r.tag))
@@ -184,7 +190,7 @@ def _descrever(client, fn, r: ReleasePublicada, base, bruta, commits_do_par, max
         linha["status_compare"] = f"erro_http_{st}"
         contagem["compares_erro"] += 1
     for criterio in CRITERIOS:
-        linha[f"_corretiva_{criterio}"] = avaliar_criterio(tipo, carac, criterio)
+        linha[f"_corretiva_{criterio}"] = avaliar_criterio(tipo, carac, criterio, extras)
     return linha
 
 

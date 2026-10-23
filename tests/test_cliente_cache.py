@@ -30,7 +30,7 @@ import json  # noqa: E402
 
 import pytest  # noqa: E402
 
-from selecao_repos import ErroDeToken  # noqa: E402
+from selecao_repos import ErroDeToken, ErroHttpPersistente  # noqa: E402
 
 
 class RespostaFalsa:
@@ -197,9 +197,10 @@ def test_resposta_de_rate_limit_nao_vai_para_o_cache(tmp_path, esperas):
 def test_erro_5xx_persistente_faz_backoff_exponencial_e_desiste(tmp_path, esperas):
     client = cliente_com_respostas(tmp_path, *[RespostaFalsa(502, {"message": "Bad Gateway"})] * 6)
 
-    with pytest.raises(RuntimeError, match="HTTP 502"):
+    with pytest.raises(ErroHttpPersistente, match="HTTP 502") as exc:
         client.get("/repos/org/projeto/tags")
 
+    assert exc.value.status == 502
     assert esperas == [1, 2, 4, 8, 16]
     assert client.chamadas == 6
     assert list(tmp_path.glob("*.json")) == []

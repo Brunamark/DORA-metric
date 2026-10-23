@@ -41,6 +41,7 @@ Nas duas variantes, **R falha se alguma release corretiva cuja predecessora é R
 | `n_fix_amplo` | Também flexões e variantes (`fixes`, `fixed`, `bugfix`, `hot-fix`, `reverted`), sem contar merges |
 | `n_fix_deps` | Títulos v1 que são atualização de dependência (`fix(deps): update dependency …`, `bump`) |
 | `notas_mencionam_correcao` | Nome e notas da release com as palavras amplas (não entra em nenhum critério ainda; está disponível para o refinamento) |
+| `patch_recente_7d` | A release é um patch publicado em até 7 dias depois de outra release da janela com o mesmo prefixo e o mesmo MAJOR.MINOR (regra do CFR (b) usada em `docs/src/metricas.py`, com a mesma leitura de versão) |
 
 ## 4. Versões da heurística
 
@@ -54,22 +55,25 @@ Cada versão é um par **pareamento × critério**. Os critérios usam lógica d
 | `so_mensagem` | algum título tem fix/hotfix/revert | Isola o critério de mensagem; não depende de SemVer |
 | `semver_e_mensagem_sem_deps` | só o patch mudou **e** algum título de correção que não é atualização de dependência | Falso positivo previsto na issue: patch que só atualiza dependências |
 | `semver_e_maioria_fix` | só o patch mudou **e** ≥ 50% dos commits (sem merges) são correção (palavras amplas) | Patch com uma correção e várias features não é "principalmente" corretivo |
+| `relatorio_patch_7d` | `patch_recente_7d` | É a regra que gerou o CFR (b) do relatório: valida o número que está no texto. Não usa commits nem predecessora, então dá o mesmo resultado nos dois pareamentos |
 
 ## 5. Validação contra a amostra-ouro
 
-1. A amostra-ouro (issue #9) gera `validacao/consenso.csv` com `full_name`, `tag_name` e o rótulo de consenso da dimensão (iii), `corretiva_consenso` ou `corretiva`, com sim/não. Rótulos "incerto" ficam de fora e são contados.
-2. **Depois que os três integrantes commitarem os próprios rótulos** (rotulagem cega), rodar:
+1. O sorteio (`src/amostra_ouro.py`, semente 42) gerou `validacao/amostra_ouro.csv`: 300 releases, 5 de cada um de 60 repositórios (`validacao/sorteio.json`). A lista dos 60 está em `validacao/repos_amostra_ouro.csv`.
+2. O integrante lê as notas da release e os commits do `compare` de cada item, e ficam em `validacao/rotulos_avaliacao_automatizada.csv` (colunas `repo`, `tag`, `corretiva` com sim/não/incerto). O `avaliar_heuristica.py` aceita esse arquivo, o `consenso.csv` da issue #9 (formato longo, com `dimensao`) e o formato largo (`full_name`, `tag_name`, `corretiva`).
+3. **Só depois que a rotulagem terminar** (para os rótulos não serem influenciados pela heurística), rodar a etapa `corretivas` apenas nos 60 repositórios, gravando em `validacao/` para não sobrescrever os dados da amostra completa, e avaliar:
    ```bash
-   python src/pipeline.py --inicio 2025-10-01 --fim 2026-10-01 --etapas corretivas
-   python src/avaliar_heuristica.py
+   python src/corretivas.py --inicio 2025-10-01 --fim 2026-10-01 --repos validacao/repos_amostra_ouro.csv --saida validacao
+   python src/avaliar_heuristica.py --consenso validacao/rotulos_avaliacao_automatizada.csv --caracteristicas validacao/releases_corretivas.csv
    ```
-3. `validacao/avaliacao_heuristica.csv` e `.md` trazem P, R e F1 de **todas** as 12 versões, ordenadas por F1. `validacao/erros_heuristica.csv` lista os falsos positivos e falsos negativos de cada versão, com as características, e é o ponto de partida do refinamento.
-4. Se a melhor versão tiver **F1 < 0,70**, refinar: analisar os erros, propor um critério novo em `metricas.CRITERIOS`, reavaliar e registrar a versão na tabela abaixo.
+4. `validacao/avaliacao_heuristica.csv` e `.md` trazem P, R e F1 de **todas** as 14 versões (2 pareamentos × 7 critérios), ordenadas por F1. `validacao/erros_heuristica.csv` lista os falsos positivos e falsos negativos de cada versão, com as características, e é o ponto de partida do refinamento.
+5. Se a melhor versão tiver **F1 < 0,70**, refinar: analisar os erros, propor um critério novo em `metricas.CRITERIOS`, reavaliar e registrar a versão na tabela abaixo.
 
 ## 6. Resultados (preencher com `validacao/avaliacao_heuristica.md`)
 
 | Versão | n | Precisão | Recall | F1 | Observação |
 |---|---|---|---|---|---|
+| relatorio_patch_7d (regra do relatório) | 300 | 0,56 | 0,49 | 0,52 | Calculada a partir de `src/data/releases.csv` (só usa tags e datas); o `avaliar_heuristica.py` reproduz o valor depois da etapa `corretivas` |
 | linha/semver_e_mensagem (v1) | | | | | |
 | … | | | | | |
 

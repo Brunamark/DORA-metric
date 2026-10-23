@@ -45,6 +45,7 @@ from selecao_repos import (
     CACHE_PADRAO,
     DADOS_PADRAO,
     ErroDeToken,
+    ErroHttpPersistente,
     GitHubClient,
     ler_repos,
     ler_token,
@@ -157,10 +158,17 @@ def commits_entre(client, fn: str, base: str, head: str,
     commits = []
     pagina = 1
     while True:
-        st, corpo, link = client.get(
-            caminho, {"per_page": 100, "page": pagina},
-            enxugar=_enxugar_compare, versao_cache=VERSAO_CACHE_COMPARE,
-        )
+        try:
+            st, corpo, link = client.get(
+                caminho, {"per_page": 100, "page": pagina},
+                enxugar=_enxugar_compare, versao_cache=VERSAO_CACHE_COMPARE,
+            )
+        except ErroHttpPersistente as exc:
+            # Ex.: 500 "this diff is temporarily unavailable" em comparações caras. Como no 404,
+            # a release é pulada e contada (releases_erro) em vez de interromper a coleta;
+            # a resposta não vai para o cache, então rodar de novo tenta outra vez.
+            print(f"  aviso: {exc}; a release fica sem lead time", flush=True)
+            return exc.status, [], None
         if st != 200:
             return st, [], None
         commits.extend(corpo.get("commits", []))
